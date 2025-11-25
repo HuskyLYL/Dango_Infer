@@ -44,10 +44,17 @@ namespace base
   void Status::set_err_msg(const std::string& err_msg) { message_ = err_msg; }
 
 
+
+
+
   //打包信息DEBUG信息编码发送
   namespace error 
   {
     Status Success(const std::string& err_msg) { return Status{kSuccess, err_msg}; }
+
+    Status Running(const std::string& err_msg) { return Status{kRunning, err_msg}; }
+
+    Status Failed(const std::string& err_msg) { return Status{kFailed, err_msg}; }
 
     Status FunctionNotImplement(const std::string& err_msg) { return Status{kFunctionUnImplement, err_msg}; }
 

@@ -1,6 +1,7 @@
 #ifndef DANGO_INCLUDE_BASE_BASE_H_
 #define DANGO_INCLUDE_BASE_BASE_H_
 #include <glog/logging.h>
+#include <cuda_runtime_api.h>
 #include <cstdint>
 #include <string>
 
@@ -42,15 +43,10 @@ namespace model
 
 namespace base 
 {
+    
     using deviceId = unsigned int;
 
-    //设备类型
-    enum class DeviceType : uint8_t 
-    {
-        kDeviceUnknown = 0,
-        kDeviceCPU = 1,
-        kDeviceCUDA = 2,
-    };
+    inline constexpr deviceId CPUID = static_cast<deviceId>(999999);
 
     //数据精度
     enum class DataType : uint8_t 
@@ -107,6 +103,9 @@ namespace base
         kInternalError = 5,
         kKeyValueHasExist = 6,
         kInvalidArgument = 7,
+        kRunning = 8,
+        kFailed = 9,
+
     };
 
     // 分词器类型
@@ -147,6 +146,26 @@ namespace base
         std::string message_;
     };
 
+    inline void setDevice(deviceId device_id)
+    {
+    
+        if (device_id == CPUID) 
+            return;
+        int current = -1;
+        cudaError_t err = cudaGetDevice(&current);
+        if (err != cudaSuccess) 
+            LOG(FATAL) << "cudaGetDevice failed: " << cudaGetErrorString(err);
+        if (current == static_cast<int>(device_id))
+            return;
+        err = cudaSetDevice(static_cast<int>(device_id));
+        if (err != cudaSuccess) 
+            LOG(FATAL) << "cudaSetDevice(" << device_id << ") failed: " << cudaGetErrorString(err);
+        return ;
+
+    }
+
+
+
     namespace error 
     {
         #define STATUS_CHECK(call)                                                                  \
@@ -165,6 +184,10 @@ namespace base
         } while (0)
 
         Status Success(const std::string& err_msg = "");
+
+        Status Running(const std::string& err_msg = "");
+
+        Status Failed(const std::string& err_msg = "");
 
         Status FunctionNotImplement(const std::string& err_msg = "");
 

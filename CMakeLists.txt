@@ -19,10 +19,11 @@ set(CMAKE_CUDA_STANDARD 14)
 
 
 aux_source_directory(dango_infer/src/base/ DIR_BASE)
+aux_source_directory(dango_infer/src/tensor/ DIR_TENSOR)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
-add_library(dango_infer SHARED ${DIR_BASE})
+add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR})
 
 target_link_libraries(dango_infer sentencepiece glog::glog)
 

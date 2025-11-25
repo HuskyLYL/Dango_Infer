@@ -1,77 +1,101 @@
 #include "base/alloc.h"
-#include <cuda_runtime_api.h>
+
 
 
 namespace base 
 {
 
-    void DeviceAllocator::memcpy(const void* src_ptr, void* dest_ptr, size_t byte_size,
-        MemcpyKind memcpy_kind, void* stream) const 
+    
+
+
+
+
+    deviceId DeviceAllocator::getDeviceId() const { return device_id_;}
+    
+    
+    void DeviceAllocatorFactory::memcpy(MemcpyTask& task)
+    {
+        CHECK_NE(task.src_ptr, nullptr);
+
+        CHECK_NE(task.dest_ptr, nullptr);
+
+        if(!task.byte_size) return;
+
+
+
+        
+
+        if (task.memcpy_kind == MemcpyKind::kMemcpyCPU2CPU) std::memcpy(const_cast<void*>(task.dest_ptr), const_cast<void*>(task.src_ptr), task.byte_size);
+
+        else if(task.memcpy_kind == MemcpyKind::kMemcpyGPU2GPU)
+        {
+
+            if(!task.stream) cudaMemcpyPeer(const_cast<void*>(task.dest_ptr), task.dest_dev_id, const_cast<void*>(task.src_ptr), task.src_dev_id, task.byte_size);
+
+            else
+            {
+          
+                setDevice(task.dest_dev_id);
+
+                cudaMemcpyPeerAsync(const_cast<void*>(task.dest_ptr), task.dest_dev_id , const_cast<void*>(task.src_ptr) , task.src_dev_id,task.byte_size,task.stream);
+
+            }
+        }
+
+        else
+        {
+            cudaMemcpyKind kind;
+            switch (task.memcpy_kind) 
+            {
+                case MemcpyKind::kMemcpyCPU2CUDA:
+                    setDevice(task.src_dev_id);
+                    kind = cudaMemcpyHostToDevice;
+                    break;
+                case MemcpyKind::kMemcpyCUDA2CPU:
+                    setDevice(task.src_dev_id);
+                    kind = cudaMemcpyDeviceToHost;
+                    break;
+                case MemcpyKind::kMemcpyCUDA2CUDA:
+                    setDevice(task.src_dev_id);
+                    kind = cudaMemcpyDeviceToDevice;
+                    break;
+                default:
+                    LOG(FATAL) << "Unknown memcpy kind: " << int(task.memcpy_kind);
+                    return; 
+            }
+            if (!task.stream) cudaMemcpy(const_cast<void*>(task.dest_ptr), const_cast<void*>(task.src_ptr), task.byte_size, kind);
+
+            else
+
+                cudaMemcpyAsync(const_cast<void*>(task.dest_ptr), const_cast<void*>(task.src_ptr), task.byte_size, kind, task.stream);
+
+        }
+  
+    }
+
+
+
+
+
+    void DeviceAllocatorFactory::memset_zero(MemcpyTask& task ) 
     {
 
-        CHECK_NE(src_ptr, nullptr);
-
-        CHECK_NE(dest_ptr, nullptr);
-
-        if(!byte_size) 
-            return;
-
-        cudaStream_t stream_ = nullptr;
-
-        if(stream) 
-            stream_ = static_cast<CUstream_st*>(stream);
-
-
-        if (memcpy_kind == MemcpyKind::kMemcpyCPU2CPU) 
-
-            std::memcpy(dest_ptr, src_ptr, byte_size);
-  
-        else if (memcpy_kind == MemcpyKind::kMemcpyCPU2CUDA) 
-        {
-            if(!stream_) 
-                cudaMemcpy(dest_ptr, src_ptr, byte_size, cudaMemcpyHostToDevice);
-            else 
-                cudaMemcpyAsync(dest_ptr, src_ptr, byte_size, cudaMemcpyHostToDevice, stream_);
-        }
-
-        else if (memcpy_kind == MemcpyKind::kMemcpyCUDA2CPU) 
-        {
-            if(!stream_) 
-                cudaMemcpy(dest_ptr, src_ptr, byte_size, cudaMemcpyDeviceToHost);
-            else
-                cudaMemcpyAsync(dest_ptr, src_ptr, byte_size, cudaMemcpyDeviceToHost, stream_);
-        }
-
-        else if (memcpy_kind == MemcpyKind::kMemcpyCUDA2CUDA) 
-        {
-            if (!stream_) 
-                cudaMemcpy(dest_ptr, src_ptr, byte_size, cudaMemcpyDeviceToDevice);
-            else 
-                cudaMemcpyAsync(dest_ptr, src_ptr, byte_size, cudaMemcpyDeviceToDevice, stream_);
-        } 
+        if (task.memcpy_kind == MemcpyKind::kMemcpyCPU2CPU) 
+            std::memset(const_cast<void*>(task.src_ptr), 0, task.byte_size);
   
         else 
-            LOG(FATAL) << "Unknown memcpy kind: " << int(memcpy_kind);
-  
+        {   
+            if (task.stream) 
+            {
+                
+                setDevice(task.src_dev_id);
+
+                cudaMemsetAsync(const_cast<void*>(task.src_ptr), 0, task.byte_size, task.stream);
+
+            } 
+            else 
+                cudaMemset(const_cast<void*>(task.src_ptr), 0, task.byte_size);
+        }
     }
 
-//一样的模板，首先确保数据类型，然后没设备进行考虑，如果是cuda，考虑是否同步
-void DeviceAllocator::memset_zero(void* ptr, size_t byte_size, void* stream,
-                                  bool need_sync) {
-  CHECK(device_type_ != base::DeviceType::kDeviceUnknown);
-  if (device_type_ == base::DeviceType::kDeviceCPU) {
-    std::memset(ptr, 0, byte_size);
-  } else {
-    if (stream) {
-      cudaStream_t stream_ = static_cast<cudaStream_t>(stream);
-      cudaMemsetAsync(ptr, 0, byte_size, stream_);
-    } else {
-      cudaMemset(ptr, 0, byte_size);
-    }
-    if (need_sync) {
-      cudaDeviceSynchronize();
-    }
-  }
-}
-
-}  // namespace base
+} 
