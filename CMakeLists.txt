@@ -10,7 +10,7 @@ set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
 
 project(dango_infer CXX CUDA)
 include(cmake/cuda.cmake)
-
+include(cmake/sentencepiece.cmake)
 
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,17 +24,20 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 aux_source_directory(dango_infer/src/base/ DIR_BASE)
 aux_source_directory(dango_infer/src/tensor/ DIR_TENSOR)
+aux_source_directory(dango_infer/src/model/ DIR_MODEL)
+aux_source_directory(dango_infer/src/op/ DIR_OP)
+aux_source_directory(dango_infer/src/kernel/ DIR_KERNEL)
 
 
 
-add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR})
+add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} ${DIR_KERNEL})
 
 
 find_package(glog REQUIRED)
 find_package(Armadillo REQUIRED)
 
 
-target_link_libraries(dango_infer glog::glog)
+target_link_libraries(dango_infer glog::glog sentencepiece)
 
 
 

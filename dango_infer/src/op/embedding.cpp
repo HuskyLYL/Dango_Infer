@@ -1,0 +1,69 @@
+#include "op/embedding.h"
+#include "kernel/cuda/embedding.cuh"
+#include "kernel/kernels_interface.h"
+#include "op/layer.h"
+namespace op 
+{
+  EmbeddingLayer::EmbeddingLayer():LayerParam( "Embedding") 
+  {
+      reset_weight_size(1);
+      reset_input_size(1);
+      reset_output_size(1);
+  }
+
+
+  base::Status EmbeddingLayer::check() const 
+  {
+
+    const auto& input_tensor = get_input(0);
+
+    const auto& weight_tensor = get_weight(0);
+
+    const auto& output_tensor = get_output(0);
+
+
+
+    int32_t input_size = input_tensor.size();
+
+    base::deviceId device_id = weight_tensor.getDeviceId();
+
+    int32_t weight_dim =  weight_tensor.get_dim(1);
+
+    CHECK_GT(input_size, 0);
+
+    
+  
+    base::Status status = check_tensor_with_dim(input_tensor, device_id, input_tensor.data_type(), input_size);
+    if (!status) 
+    {
+      LOG(ERROR) << "The input tensor error in the embedding layer.";
+      return status;
+    }
+
+
+
+    status = check_tensor_with_dim(output_tensor, device_id, output_tensor.data_type(),input_size,weight_dim);
+    if (!status) 
+    {
+      LOG(ERROR) << "The output tensor error in the embedding layer.";
+      return status;
+    }
+
+    base::setDevice(device_id);
+
+    return base::error::Success();
+  }
+
+  base::Status EmbeddingLayer::forward(cudaStream_t stream) 
+  {
+
+    base::Status status = check();
+
+    if (!status) 
+      return status;
+  
+    f32x4_kernel_cu::get_embedding_kernel()(get_input(0), get_weight(0), get_output(0), stream ? stream : nullptr);
+
+    return base::StatusCode::kSuccess;
+  }
+}  // namespace op
