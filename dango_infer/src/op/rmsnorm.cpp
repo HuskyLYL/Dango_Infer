@@ -61,10 +61,10 @@ namespace op
         auto weight = this->get_weight(0);
         auto output = this->get_output(0);
 
-        f32x4_kernel_cu::get_rmsnorm_kernel()(input, weight, output, stream);
+        f32x4_kernel_cu::get_rmsn_kernel()(input, weight, output, stream);
 
         return base::error::Success();
-}
+    }
 
 
 

@@ -27,14 +27,15 @@ aux_source_directory(dango_infer/src/tensor/ DIR_TENSOR)
 aux_source_directory(dango_infer/src/model/ DIR_MODEL)
 aux_source_directory(dango_infer/src/op/ DIR_OP)
 aux_source_directory(dango_infer/src/kernel/ DIR_KERNEL)
+aux_source_directory(dango_infer/src/op/cuda DIR_CUDA)
+aux_source_directory(dango_infer/src/sampler DIR_SAMPLER)
 
 
 
-add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} ${DIR_KERNEL})
+add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} ${DIR_KERNEL} ${DIR_CUDA} ${DIR_SAMPLER})
 
 
 find_package(glog REQUIRED)
-find_package(Armadillo REQUIRED)
 
 
 target_link_libraries(dango_infer glog::glog sentencepiece)
@@ -44,7 +45,6 @@ target_link_libraries(dango_infer glog::glog sentencepiece)
 
 target_include_directories(dango_infer PUBLIC ${PROJECT_SOURCE_DIR}/dango_infer/inc)
 target_include_directories(dango_infer PUBLIC ${glog_INCLUDE_DIR})
-target_include_directories(dango_infer PUBLIC ${ARMADILLO_INCLUDE_DIRS})
 target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 

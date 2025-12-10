@@ -14,6 +14,20 @@
     }while (0)
 
 
+#define CUDA_CALL(expr)                                                         \
+    do                                                                          \
+    {                                                                           \
+        cudaError_t _cuda_err = (expr);                                         \
+        if (_cuda_err != cudaSuccess)                                           \
+        {                                                                       \
+            LOG(FATAL) << "CUDA error: " << cudaGetErrorString(_cuda_err)       \
+                 << " | expr: " << #expr                                        \
+                 << " | file: " << __FILE__                                     \
+                 << " | line: " << __LINE__;                                    \
+        }                                                                       \
+    } while (0)
+
+
 
 namespace model 
 {
@@ -44,9 +58,10 @@ namespace model
 namespace base 
 {
     
-    using deviceId = unsigned int;
+    using deviceId = int;
 
-    inline constexpr deviceId CPUID = static_cast<deviceId>(999999);
+    // avoid C++17 inline variable requirement on nvcc default standard
+    static constexpr deviceId CPUID = static_cast<deviceId>(999999);
 
     //数据精度
     enum class DataType : uint8_t 

@@ -2,7 +2,6 @@
 #define DANGO_INCLUDE_TENSOR_TENSOR_H_
 #include <driver_types.h>
 #include <glog/logging.h>
-#include <armadillo>
 #include <memory>
 #include <vector>
 #include "base/base.h"

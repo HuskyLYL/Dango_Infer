@@ -18,7 +18,9 @@ namespace f32x4_kernel_cu
 
     Embedding get_embedding_kernel();
 
-    Rmsnorm get_rmsnorm_kernel();
+    Rmsnorm get_rmsn_kernel();
+
+
 
 }  // namespace kernel
 #endif  // KERNELS_INTERFACE_H

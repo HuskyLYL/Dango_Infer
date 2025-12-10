@@ -1,4 +1,3 @@
-spack load armadillo
 spack load glog
 spack load sentencepiece
 rm -rf ./build

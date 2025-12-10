@@ -1,4 +1,4 @@
-#include "embedding.cuh"
+#include "kernel/cuda/embedding.cuh"
 namespace f32x4_kernel_cu
 {
     #define FLOAT4(value) (reinterpret_cast<float4 *>(&(value))[0])
@@ -42,13 +42,13 @@ namespace f32x4_kernel_cu
 
 
     void embedding_kernel(const tensor::Tensor& input, const tensor::Tensor& weight,
-                    const tensor::Tensor& output, int32_t vocab_size, void* stream) 
+                    const tensor::Tensor& output, void* stream) 
     {
         const int32_t input_num = static_cast<int32_t>(input.size());
    
         const int32_t weight_dim = weight.get_dim(1);
  
-        int32_t* in_ptr = input.ptr<int32_t>();
+        const int32_t* in_ptr = input.ptr<int32_t>();
     
         float* wei_ptr = const_cast<float*>(weight.ptr<float>());
         float* out_ptr = const_cast<float*>(output.ptr<float>());

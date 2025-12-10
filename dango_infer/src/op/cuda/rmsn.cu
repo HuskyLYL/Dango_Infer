@@ -18,9 +18,9 @@ namespace f32x4_kernel_cu
   template <const int NUM_THREADS = 256>
   __device__ __forceinline__ float block_reduce_sum_f32(float val) 
   {
-      constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
-      int warp = threadIdx.x / WARP_SIZE;
-      int lane = threadIdx.x % WARP_SIZE;
+      constexpr int NUM_WARPS = (NUM_THREADS + 32 - 1) / 32;
+      int warp = threadIdx.x / 32;
+      int lane = threadIdx.x % 32;
       static __shared__ float shared[NUM_WARPS];
       val = warp_reduce_sum_f32<32>(val);
       if (lane == 0)
@@ -32,72 +32,140 @@ namespace f32x4_kernel_cu
   }
 
 
-  //此处套用a模板类传递block的大小
-  template <const int NUM_THREADS = 256 / 4>
-  __global__ void rms_norm_f32x4_kernel(float *in, float *wei, float* out, 
-      int dim_size,int size,float eps) 
+  //当tensor为一维的时候
+  template <int32_t BLOCK_DIM>
+  static __global__ void row_f32x4_rmsnorm_kernel(float* in, float* wei, float* out, int dim_size, float eps) 
   {
-    // [seqlen,tensor_dim]
 
-    int tid = threadIdx.x; 
-    //seq_id
-    int bid = blockIdx.x; 
-      
-      //tensor_element_id
-    int idx = (bid * blockDim.x + threadIdx.x) * 4;
+    const int tid = threadIdx.x;
 
-    //同一个block之中的缩放系数
-    __shared__ float s_variance;
+    constexpr int pack_size = 4;
+    const int pack_num = dim_size / pack_size;
+    const int pack_off = pack_size * pack_num;
 
-    float4 reg_in = FLOAT4(in[idx]);
+    float sum = 0.0f;
+    float4* in_pack = reinterpret_cast<float4*>(in);
 
-    float4 reg_wei = FLOAT4(wei[idx]);
+    for (int i = tid; i < pack_num; i += blockDim.x) 
+    {
+      float4 in_float4 = *(in_pack + i);
+      sum += in_float4.x * in_float4.x;
+      sum += in_float4.y * in_float4.y;
+      sum += in_float4.z * in_float4.z;
+      sum += in_float4.w * in_float4.w;
+    }
 
-    float variance = 0.0f;
+    //这种写法蛮顺眼的
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x) 
+      sum += in[i] * in[i];
 
-    if(idx+3<dim_size * size)
-        variance = reg_in.x * reg_in.x + reg_in.y * reg_in.y +reg_in.z * reg_in.z + reg_in.w * reg_in.w;
-    else if(idx+2<dim_size * size)
-        variance = reg_in.x * reg_in.x + reg_in.y * reg_in.y +reg_in.z * reg_in.z ;
-    else if(idx+1<dim_size * size)
-        variance = reg_in.x * reg_in.x + reg_in.y * reg_in.y ;
-    else if(idx < dim_size * size)
-        variance = reg_in.x * reg_in.x;
+    sum = block_reduce_sum_f32<BLOCK_DIM>(sum);
 
-    //块级归约
-    variance = block_reduce_sum_f32<NUM_THREADS>(variance);
+    //来个共享，目的是为了求和
+    __shared__ float shared_val;
 
+    if (threadIdx.x == 0) 
 
-//#######################################NOW###################################################
-
-    if (tid == 0)
-      
-      s_variance = rsqrtf(variance / static_cast<float>(dim_size) +eps);
+      shared_val = sum;
   
     __syncthreads();
-    float4 reg_y;
-    reg_y.x = reg_x.x * s_variance * reg_wei.x;
-    reg_y.y = reg_x.y * s_variance * reg_wei.y;
-    reg_y.z = reg_x.z * s_variance * reg_wei.z;
-    reg_y.w = reg_x.w * s_variance * reg_wei.w;
-    if (idx+3 < size * dim_size)
-      FLOAT4(out[idx]) = reg_y;
-    else if(idx+2 <  size * dim_size)
-    {
-      out[idx] = reg_y.x;
-      out[idx+1] = reg_y.y;
-      out[idx+2] = reg_y.z;
-    }
-    else if(idx+1 <  size * dim_size)
-    {
-      out[idx] = reg_y.x;
-      out[idx+1] = reg_y.y;
-    }
-    else if(idx <  size * dim_size)
-      out[idx] = reg_y.x;
 
+    sum = shared_val;
+    
+    const float scale = rsqrtf(sum / static_cast<float>(dim_size) + eps);
 
+    float4* wei_pack = reinterpret_cast<float4*>(wei);
+    float4* out_pack = reinterpret_cast<float4*>(out);
+
+    for (int i = tid; i < pack_num; i += blockDim.x) 
+    {
+      float4 in_float4 = *(in_pack + i);
+      float4 wei_float4 = *(wei_pack + i);
+      *(out_pack + i) =
+          make_float4(scale * in_float4.x * wei_float4.x, scale * in_float4.y * wei_float4.y,
+                    scale * in_float4.z * wei_float4.z, scale * in_float4.w * wei_float4.w);
+    }
+
+    //组外的元素
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x) 
+      out[i] = wei[i] * in[i] * scale;
+  
   }
+
+  template <int32_t BLOCK_DIM>
+  static __global__ void row_dim_f32x4_rmsnorm_kernel(float* in, float* wei, 
+    float* out, int seq_len,int dim_size, float eps) 
+  {
+    const int bid = blockIdx.x;
+    const int tid = threadIdx.x;
+
+    //所以这里限制了seq的大小
+    if (bid >= seq_len) 
+      return;
+    
+
+    float* block_in = in + bid * dim_size;
+    float* block_out = out + bid * dim_size;
+    constexpr int pack_size = 4;
+    const int pack_num = dim_size / pack_size;
+    const int pack_off = pack_size * pack_num;
+
+    float sum = 0.0f;
+    //float 还是可以有强制转化条件的
+    float4* in_pack = reinterpret_cast<float4*>(block_in);
+
+    for (int i = tid; i < pack_num; i += blockDim.x) 
+    {
+      float4 in_float4 = *(in_pack + i);
+      sum += in_float4.x * in_float4.x;
+      sum += in_float4.y * in_float4.y;
+      sum += in_float4.z * in_float4.z;
+      sum += in_float4.w * in_float4.w;
+    }
+
+
+  //
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x) 
+      sum += block_in[i] * block_in[i];
+
+
+    sum = block_reduce_sum_f32<BLOCK_DIM>(sum);
+
+
+    __shared__ float shared_val;
+
+    if (threadIdx.x == 0) 
+
+      shared_val = sum;
+    
+    __syncthreads();
+  
+    sum = shared_val;
+    const float scale = rsqrtf(sum / static_cast<float>(dim_size) + eps);
+
+    float4* wei_pack = reinterpret_cast<float4*>(wei);
+    float4* out_pack = reinterpret_cast<float4*>(block_out);
+
+    for (int i = tid; i < pack_num; i += blockDim.x) 
+    {
+      float4 in_float4 = *(in_pack + i);
+      float4 wei_float4 = *(wei_pack + i);
+      *(out_pack + i) =
+          make_float4(scale * in_float4.x * wei_float4.x, scale * in_float4.y * wei_float4.y,
+                      scale * in_float4.z * wei_float4.z, scale * in_float4.w * wei_float4.w);
+    }
+
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x) 
+      block_out[i] = wei[i] * block_in[i] * scale;
+  
+  }
+
+
+
+
+
+
+
 
   void rmsnorm_kernel(const tensor::Tensor& input, const tensor::Tensor& weight,
                        const tensor::Tensor& output, cudaStream_t stream) 
@@ -106,22 +174,30 @@ namespace f32x4_kernel_cu
 
     const int32_t tensor_dim = weight.get_dim(0);
 
-    int32_t block_size = 1;
-
-    int32_t thread_size = (tensor_dim+3)/4;
-
-    if(input.dims_size()>1)
-      block_size = input.get_dim(0);
 
 
     float* in_ptr = const_cast<float*>(input.ptr<float>());
     float* wei_ptr = const_cast<float*>(weight.ptr<float>());
     float* out_ptr = const_cast<float*>(output.ptr<float>());
 
-    if (stream) 
-      return rms_norm_f32x4_kernel<thread_size><<<block_size, thread_size, 0, stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,block_size, eps);
-    else 
-      return rms_norm_f32x4_kernel<thread_size><<<block_size, thread_size>>>(in_ptr, wei_ptr, out_ptr, tensor_dim,block_size, eps);
+    if(input.dims_size()>1)
+    {
+      const int32_t seq_len =  input.get_dim(0);
+      //这里限制了最大的输入数目
+      if(stream)
+        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128,0,stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
+      else
+        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
+    }
+    else
+    {
+      if (stream) 
+        return row_f32x4_rmsnorm_kernel<128><<<1, 128, 0, stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim , eps);
+      else 
+        return row_f32x4_rmsnorm_kernel<128><<<1, 128>>>(in_ptr, wei_ptr, out_ptr, tensor_dim, eps);
+    }
+
+
   }
 }
 
