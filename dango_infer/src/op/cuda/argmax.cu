@@ -1,72 +1,9 @@
 #include "kernel/kernels_interface.h"
 #include "kernel/cuda/argmax.cuh"
+#include "kernel/cuda/argmax_reduce.cuh"
 #include "tensor/tensor.h"
 namespace base_kernel_cu 
 {
-    __forceinline__ __device__ void warp_reduce_argmax(float& val, size_t& ptr) 
-    {
-        //这里传入的是每个线程块的索引和最大
-        float tmp_val;
-        size_t tmp_ptr;
-        
-        unsigned int mask = __ballot_sync(0xFFFFFFFF, true);
-        for (unsigned int k = (warpSize >> 1); k > 0; k >>= 1) 
-        {
-            tmp_val = __shfl_down_sync(mask, val, k, warpSize);
-            tmp_ptr = __shfl_down_sync(mask, ptr, k, warpSize);
-            if (ptr == SIZE_MAX || tmp_ptr == SIZE_MAX) continue;
-            if (tmp_val > val) 
-            {
-                val = tmp_val;
-                ptr = tmp_ptr;
-            } 
-        
-            else if (tmp_val == val && tmp_ptr < ptr)
-                ptr = tmp_ptr;
-        }
-    }
-
-
-
-    __forceinline__ __device__ void block_reduce_argmax(float& val, size_t& ptr, 
-        float* shared_value,size_t* shared_ptr) 
-    {
-  
-        int lane_id = threadIdx.x % warpSize;
-        int warp_id = threadIdx.x / warpSize;
-
-        //先进行warp级别的argmax归约
-        warp_reduce_argmax(val, ptr);
-
-        __syncthreads();
-  
-        if (lane_id == 0) 
-        {
-            shared_value[warp_id] = val;
-            shared_ptr[warp_id] = ptr;
-        }
-        __syncthreads();
-  
-
-
-        //lane id 是唯一的
-        //此处不存在除不尽的行为
-        //这里我们将共享内存的数据提取到一个线程束之中，再来一次归约操作！！
-        if (threadIdx.x < blockDim.x / warpSize) 
-        {
-            val = shared_value[lane_id];
-            ptr = shared_ptr[lane_id];
-        } 
-        else 
-        {
-            val = 0;
-            ptr = SIZE_MAX;
-        }
-
-        if (warp_id == 0) 
-            warp_reduce_argmax(val, ptr);
-  
-    }
 
     //这里只是对单个元素的
     __global__ void argmax_kernel_fp32(const float* input_ptr, size_t size, size_t* output_idx) 
