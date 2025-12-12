@@ -1,8 +1,8 @@
-#ifndef KUIPER_INCLUDE_MODEL_LLAMA_H_
-#define KUIPER_INCLUDE_MODEL_LLAMA_H_
+#ifndef DANGO_INCLUDE_MODEL_LLAMA_H_
+#define DANGO_INCLUDE_MODEL_LLAMA_H_
 
 #include "model.h"
-#include "op/add.h"
+#include "op/elementwise.h"
 #include "op/embedding.h"
 #include "op/rope.h"
 #include "op/swiglu.h"

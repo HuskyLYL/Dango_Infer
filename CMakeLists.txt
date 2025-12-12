@@ -47,7 +47,7 @@ target_include_directories(dango_infer PUBLIC ${PROJECT_SOURCE_DIR}/dango_infer/
 target_include_directories(dango_infer PUBLIC ${glog_INCLUDE_DIR})
 target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
-
+add_subdirectory(sampler/simple_chat)
 
 
 
