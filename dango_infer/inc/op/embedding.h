@@ -9,19 +9,18 @@ namespace op
     {
         tensor::Tensor input_tokens;
         tensor::Tensor input_embeddings;
-        tensor::Tensor input_token_num;
-        explicit EmbeddingOutput(tensor::Tensor input_tokens, tensor::Tensor input_embeddings,
-                           tensor::Tensor input_token_num)
+
+        explicit EmbeddingOutput(tensor::Tensor input_tokens, tensor::Tensor input_embeddings)
             : input_tokens(std::move(input_tokens)),
-            input_embeddings(std::move(input_embeddings)),
-            input_token_num(std::move(input_token_num)) {}
+            input_embeddings(std::move(input_embeddings))
+        {}
     };
 
     class EmbeddingLayer : public LayerParam 
     {
     public:
         explicit EmbeddingLayer();
-
+        
         base::Status check() const override;
 
         base::Status forward(cudaStream_t stream=nullptr) override;

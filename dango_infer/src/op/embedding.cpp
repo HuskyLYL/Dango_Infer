@@ -49,6 +49,8 @@ namespace op
       return status;
     }
 
+
+
     base::setDevice(device_id);
 
     return base::error::Success();
@@ -63,6 +65,9 @@ namespace op
       return status;
   
     f32x4_kernel_cu::get_embedding_kernel()(get_input(0), get_weight(0), get_output(0), stream ? stream : nullptr);
+
+
+
 
     return base::StatusCode::kSuccess;
   }

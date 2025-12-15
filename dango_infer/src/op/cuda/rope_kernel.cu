@@ -1,4 +1,4 @@
-#include "kernel/cuda/rope_kernel.cuh"
+#include "kernel/cuda/rope_kernel.cuh" 
 namespace base_kernel_cu 
 {
 
@@ -75,8 +75,9 @@ namespace base_kernel_cu
     void rope_kernel_cu(int32_t dim, int32_t kv_dim, int32_t head_size, const tensor::Tensor& input_q,
         const tensor::Tensor& input_k, const tensor::Tensor& input_pos,
         const tensor::Tensor& sin_cache, const tensor::Tensor& cos_cache,
-        void* stream) 
+        cudaStream_t  stream) 
     {
+        //CPUID,调用核之前
         const int32_t pos = *input_pos.ptr<int32_t>(0);
         int threads = 128;
         int blocks = (dim + threads - 1) / threads;

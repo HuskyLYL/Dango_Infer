@@ -6,7 +6,9 @@ namespace base
 {
 
     
+    std::shared_ptr<CPUDeviceAllocator> DeviceAllocatorFactory::cpu_instance = nullptr;
 
+    std::unordered_map<deviceId, std::shared_ptr<CUDADeviceAllocator> > DeviceAllocatorFactory::cuda_instances = {};
 
 
 
@@ -21,9 +23,6 @@ namespace base
 
         if(!task.byte_size) return;
 
-
-
-        
 
         if (task.memcpy_kind == MemcpyKind::kMemcpyCPU2CPU) std::memcpy(const_cast<void*>(task.dest_ptr), const_cast<void*>(task.src_ptr), task.byte_size);
 

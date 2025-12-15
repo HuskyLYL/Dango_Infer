@@ -60,6 +60,14 @@ namespace op
         virtual const tensor::Tensor& get_output(int32_t idx) const = 0;
 
 
+        //这里先写着,主要目的是为了好让基础指针调用
+        //这里不可以直接整为0
+        virtual base::Status set_weight(int32_t idx, const tensor::Tensor& weight);
+
+        virtual base::Status set_weight(int32_t idx, const std::vector<int32_t>& dims, const void* weight_ptr,
+            base::deviceId device_id ,base::DataType weight_data_type = base::DataType::kDataTypeFp32) ;
+
+
 
         const std::string& get_layer_name() const;
 
@@ -128,6 +136,8 @@ namespace op
 
         void reset_output_size(size_t size);
 
+        virtual void to_device(base::deviceId device_id,cudaStream_t stream=nullptr);
+
 
 
     };
@@ -145,14 +155,18 @@ namespace op
 
         const tensor::Tensor& get_weight(int32_t idx) const;
 
+        void to_device(base::deviceId device_id,cudaStream_t stream=nullptr) override;
 
-        base::Status set_weight(int32_t idx, const tensor::Tensor& weight) ;
+
+        base::Status set_weight(int32_t idx, const tensor::Tensor& weight) override;
 
         base::Status set_weight(int32_t idx, const std::vector<int32_t>& dims, const void* weight_ptr,
-                          base::deviceId device_id ,base::DataType weight_data_type = base::DataType::kDataTypeFp32) ;
+                          base::deviceId device_id ,base::DataType weight_data_type = base::DataType::kDataTypeFp32) override;
 
 
     protected:
+
+        tensor::Tensor scales_;
 
         std::vector<tensor::Tensor> weights_;
     };

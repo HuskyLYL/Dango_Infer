@@ -16,10 +16,10 @@ namespace model
     class Model 
     {
     public:
-        explicit Model(base::deviceId device_id,base::TokenizerType tokenizer_type, base::ModelType model_type,
+        explicit Model(base::TokenizerType tokenizer_type, base::ModelType model_type,
                         std::string token_path, std::string model_path, bool is_quant_model);
 
-        virtual base::Status init() = 0;
+        virtual base::Status init(base::deviceId device_id) = 0;
 
         virtual base::Status predict(const tensor::Tensor& input, const tensor::Tensor& pos_tensor,
                                     bool is_prompt, int& next) const = 0;
@@ -67,7 +67,7 @@ namespace model
 
         virtual base::Status generate_model_infos(const ModelConfig& config) const;
 
-        virtual int32_t post_processing(const tensor::Tensor& pos, bool is_prompt) const = 0;
+        virtual int32_t post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream=nullptr) const = 0;
 
     private:
         virtual void init_mem() = 0;
@@ -78,7 +78,7 @@ namespace model
 
         virtual void create_nonparam_layers() = 0;
 
-        virtual void create_param_quant_layers() = 0;
+        //virtual void create_param_quant_layers() = 0;
 
     protected:
         int32_t group_size_ = 1;

@@ -141,12 +141,13 @@ namespace f32x4_kernel_cu
 
 
   void rmsnorm_kernel(const tensor::Tensor& input, const tensor::Tensor& weight,
-                       const tensor::Tensor& output, cudaStream_t stream) 
+                       const tensor::Tensor& output, void* stream) 
   {
     const float eps = 1e-5f;
 
     const int32_t tensor_dim = weight.get_dim(0);
 
+    auto cuda_stream = static_cast<cudaStream_t>(stream);
 
 
     float* in_ptr = const_cast<float*>(input.ptr<float>());
@@ -157,15 +158,15 @@ namespace f32x4_kernel_cu
     {
       const int32_t seq_len =  input.get_dim(0);
       //这里限制了最大的输入数目
-      if(stream)
-        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128,0,stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
+      if(cuda_stream)
+        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128,0,cuda_stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
       else
         return row_dim_f32x4_rmsnorm_kernel<128><<<512,128>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
     }
     else
     {
-      if (stream) 
-        return row_f32x4_rmsnorm_kernel<128><<<1, 128, 0, stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim , eps);
+      if (cuda_stream) 
+        return row_f32x4_rmsnorm_kernel<128><<<1, 128, 0, cuda_stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim , eps);
       else 
         return row_f32x4_rmsnorm_kernel<128><<<1, 128>>>(in_ptr, wei_ptr, out_ptr, tensor_dim, eps);
     }
@@ -173,7 +174,6 @@ namespace f32x4_kernel_cu
 
   }
 }
-
 
 
 

@@ -38,6 +38,7 @@ add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} 
 find_package(glog REQUIRED)
 
 
+
 target_link_libraries(dango_infer glog::glog sentencepiece)
 
 
@@ -48,6 +49,7 @@ target_include_directories(dango_infer PUBLIC ${glog_INCLUDE_DIR})
 target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 add_subdirectory(sampler/simple_chat)
+add_subdirectory(sampler/test)
 
 
 

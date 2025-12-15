@@ -32,14 +32,17 @@ namespace op
         if (pos_ < 0 || pos_ >= seq_len_) 
             return base::error::InvalidArgument("The mha layer position is out of range.");
 
-        if (query_tensor.dims_size() != 2) 
-            return base::error::InvalidArgument("The mha layer requires 2-D query tensor.");
-        base::Status status = check_tensor_with_dim(query_tensor, device_id, data_type, head_num_, head_size_);
-        if (!status) 
-        {
-            LOG(ERROR) << "The input tensor 0 error in the mha layer.";
-            return status;
-        }
+        if (query_tensor.dims_size() != 1) 
+            return base::error::InvalidArgument("The mha layer requires 1-D query tensor.");
+
+
+        base::Status status;
+        //check_tensor_with_dim(query_tensor, device_id, data_type, head_num_, head_size_);
+        //if (!status) 
+        //{
+        //    LOG(ERROR) << "The input tensor 0 error in the mha layer.";
+        //    return status;
+        //}
 
         if (score_tensor.dims_size() != 2) 
             return base::error::InvalidArgument("The mha layer requires 2-D score tensor.");
@@ -84,9 +87,9 @@ namespace op
             return base::error::InvalidArgument("The mha layer key/value cache tensors have different dims.");
         }
 
-        if (output_tensor.dims_size() != 2) 
-            return base::error::InvalidArgument("The mha layer requires 2-D output tensor.");
-        status = check_tensor_with_dim(output_tensor, device_id, data_type, head_num_, head_size_);
+        //if (output_tensor.dims_size() != 2) 
+        //    return base::error::InvalidArgument("The mha layer requires 2-D output tensor.");
+        //status = check_tensor_with_dim(output_tensor, device_id, data_type, head_num_, head_size_);
         if (!status) 
         {
             LOG(ERROR) << "The output tensor error in the mha layer.";

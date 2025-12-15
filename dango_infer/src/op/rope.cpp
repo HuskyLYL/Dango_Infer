@@ -23,6 +23,7 @@ namespace op
         const auto& sin_cache = get_input(3);
         const auto& cos_cache = get_input(4);
 
+
         base::deviceId device_id = input_q.getDeviceId();
         base::DataType data_type = input_q.data_type();
 
@@ -51,24 +52,6 @@ namespace op
             LOG(ERROR) << "The input tensor 1 error in the rope layer.";
             return status;
         }
-
-        if (sin_cache.dims_size() != 2 || cos_cache.dims_size() != 2) 
-            return base::error::InvalidArgument("The rope layer requires 2-D sin/cos cache tensors.");
-        int32_t max_seq_len = sin_cache.get_dim(0);
-        status = check_tensor_with_dim(sin_cache, device_id, data_type, max_seq_len, head_size_);
-        if (!status) 
-        {
-            LOG(ERROR) << "The input tensor 3 error in the rope layer.";
-            return status;
-        }
-
-        status = check_tensor_with_dim(cos_cache, device_id, data_type, max_seq_len, head_size_);
-        if (!status) 
-        {
-            LOG(ERROR) << "The input tensor 4 error in the rope layer.";
-            return status;
-        }
-
         base::setDevice(device_id);
         return base::error::Success();
     }

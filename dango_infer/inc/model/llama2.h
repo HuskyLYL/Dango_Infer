@@ -4,8 +4,12 @@
 #include "model.h"
 #include "op/elementwise.h"
 #include "op/embedding.h"
+#include "op/matmul.h"
+#include "op/mha.h"
+#include "op/rmsnorm.h"
 #include "op/rope.h"
 #include "op/swiglu.h"
+
 namespace model 
 {
 
@@ -25,8 +29,11 @@ namespace model
         std::vector<std::shared_ptr<op::Layer>> w2_layers_;
         std::vector<std::shared_ptr<op::Layer>> rmsnorm_layers_;
         std::vector<std::shared_ptr<op::Layer>> w3_layers_;
-  
         std::shared_ptr<op::Layer> cls_layer_;
+
+        std::shared_ptr<op::Layer> embedding_layer_;
+
+
     };
 
     class LLama2Model : public Model 
@@ -35,7 +42,7 @@ namespace model
         explicit LLama2Model(base::TokenizerType tokenizer_type, std::string token_path,
                             std::string model_path, bool is_quant_model);
 
-        base::Status init() override;
+        base::Status init(base::deviceId device_id) override;
 
         base::Status predict(const tensor::Tensor& input, const tensor::Tensor& pos_tensor,
                             bool is_prompt, int& next) const override;
@@ -54,8 +61,6 @@ namespace model
 
         void create_nonparam_layers() override;
 
-        void create_param_quant_layers() override;
-
         void attention_mha(int32_t layer_idx, const tensor::Tensor& pos_tensor) const;
 
         void attention_rms(int32_t layer_idx, const tensor::Tensor& input) const;
@@ -66,9 +71,10 @@ namespace model
 
         void cls_logits(const tensor::Tensor& input) const;
 
-        int32_t post_processing(const tensor::Tensor& pos, bool is_prompt) const override;
+        int32_t post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream = nullptr) const override;
 
     private:
+
 
         std::unique_ptr<LLama2Layers> llama_layers_;
     };

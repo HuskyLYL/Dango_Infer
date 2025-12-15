@@ -15,6 +15,19 @@ namespace op
     }
 
 
+    base::Status BaseLayer::set_weight(int32_t idx, const tensor::Tensor& weight) { return base::error::FunctionNotImplement(); }
+
+    base::Status BaseLayer::set_weight(int32_t idx, const std::vector<int32_t>& dims, const void* weight_ptr,
+            base::deviceId device_id ,base::DataType weight_data_type )
+    {
+        return base::error::FunctionNotImplement();
+    }
+
+
+
+
+
+
     const std::string& BaseLayer::get_layer_name() const { return layer_name_; }
 
     void BaseLayer::set_layer_name(const std::string& layer_name) { layer_name_ = layer_name; }
@@ -128,8 +141,26 @@ namespace op
 
     size_t Layer::output_size() const { return outputs_.size(); }
 
+    void Layer::to_device(base::deviceId device_id ,cudaStream_t stream) 
+    {
+        for (auto& input : inputs_) 
+            if (!input.is_empty()) 
+                input.to_device(device_id,stream);
+        for (auto& output : outputs_) 
+            if (!output.is_empty()) 
+            output.to_device(device_id,stream);
+    }
 
-
+    void LayerParam::to_device(base::deviceId device_id,cudaStream_t stream) 
+    {
+        Layer::to_device(device_id,stream);
+        for (auto& weight : weights_) 
+            weight.to_device(device_id,stream);
+        
+        if (!scales_.is_empty()) 
+            scales_.to_device(device_id,stream);
+        
+    }
 
 
 

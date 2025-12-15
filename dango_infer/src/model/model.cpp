@@ -5,13 +5,12 @@
 #include <unistd.h>
 namespace model 
 {
-    Model::Model(base::deviceId device_id,base::TokenizerType tokenizer_type, base::ModelType model_type,
+    Model::Model(base::TokenizerType tokenizer_type, base::ModelType model_type,
         std::string token_path, std::string model_path, bool is_quant_model)
         : tokenizer_type_(tokenizer_type),
         model_type_(model_type),
         token_path_(std::move(token_path)),
         model_path_(std::move(model_path)),
-        device_id_(device_id),
         is_quant_model_(is_quant_model) {}
 
     base::ModelType Model::model_type() const { return model_type_; }
@@ -72,7 +71,7 @@ namespace model
                     "Failed to retrieve the group size information from the model "
                     "file.");
 
-        //这里把我们加载到的配置信息读取model类
+        //这里把我们加载到的配置信息读取到lmode->config
         auto gen_status = generate_model_infos(config);
 
         if (!gen_status) 
@@ -235,18 +234,14 @@ namespace model
         bool is_prompt) const 
     {
       const int32_t pos = pos_tensor.index<int32_t>(0);
-      auto [input_tokens, input_embeddings, input_token_num] = embedding_output;
+      auto [input_tokens, input_embeddings] = embedding_output;
 
       int32_t index = 0;
       if (is_prompt) 
+
         index = pos;
 
-
       tensor::Tensor input( config_->dim_,device_id_,base::DataType::kDataTypeFp32,input_embeddings.ptr<float>(index * config_->dim_));
-
-
-
-
       return input;
     }
 
