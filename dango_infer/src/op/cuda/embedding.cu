@@ -47,6 +47,8 @@ namespace f32x4_kernel_cu
         const int32_t input_num = static_cast<int32_t>(input.size());
    
         const int32_t weight_dim = weight.get_dim(1);
+
+ 
  
         const int32_t* in_ptr = input.ptr<int32_t>();
     

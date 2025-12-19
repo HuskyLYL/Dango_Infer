@@ -134,6 +134,17 @@ namespace model
             config_->is_shared_weight_ = false;
 
         config_->vocab_size_ = std::abs(config.vocab_size);
+        LOG(INFO) << "ModelConfig dim=" << config_->dim_
+                  << " hidden_dim=" << config_->hidden_dim_
+                  << " layers=" << config_->layer_num_
+                  << " heads=" << config_->head_num_
+                  << " kv_heads=" << config_->kv_head_num_
+                  << " seq_len=" << config_->seq_len_
+                  << " kv_dim=" << config_->kv_dim_
+                  << " kv_mul=" << config_->kv_mul_
+                  << " head_size=" << config_->head_size_
+                  << " vocab_size=" << config_->vocab_size_
+                  << " shared_weight=" << config_->is_shared_weight_;
         return base::error::Success();
     }
 

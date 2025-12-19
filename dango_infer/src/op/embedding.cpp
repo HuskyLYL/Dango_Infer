@@ -25,6 +25,11 @@ namespace op
 
     int32_t input_size = input_tensor.size();
 
+ 
+
+    //这里完全可以继续优化
+    
+
     base::deviceId device_id = weight_tensor.getDeviceId();
 
     int32_t weight_dim =  weight_tensor.get_dim(1);
@@ -49,8 +54,7 @@ namespace op
       return status;
     }
 
-
-
+  
     base::setDevice(device_id);
 
     return base::error::Success();

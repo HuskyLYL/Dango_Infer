@@ -1,5 +1,6 @@
 #ifndef DANGO_INCLUDE_BASE_BASE_H_
 #define DANGO_INCLUDE_BASE_BASE_H_
+#include <cuda_fp16.h>  
 #include <glog/logging.h>
 #include <cuda_runtime_api.h>
 #include <cstdint>
@@ -70,6 +71,7 @@ namespace base
         kDataTypeFp32 = 1,
         kDataTypeInt8 = 2,
         kDataTypeInt32 = 3,
+        kDataTypeFp16 = 4,
     };
 
     //模型类型
@@ -91,6 +93,8 @@ namespace base
         else if (data_type == DataType::kDataTypeInt32) 
             return sizeof(int32_t);
 
+        else if(data_type == DataType::kDataTypeFp16)
+            return sizeof(__half);  
         else 
             return 0;
     }
