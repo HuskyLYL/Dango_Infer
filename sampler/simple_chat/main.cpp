@@ -2,6 +2,7 @@
 #include <base/tick.h>
 #include <glog/logging.h>
 #include "model/llama2.h"
+#include "model/llama2_prompt.h"
 
 int32_t generate(const model::LLama2Model& model, const std::string& sentence, int total_steps,
                  bool need_output = false) 
@@ -70,6 +71,29 @@ int main(int argc, char* argv[])
     FLAGS_alsologtostderr = 1;
     FLAGS_colorlogtostderr = 1;
     FLAGS_log_prefix = 1;
+
+    model::PromptSession sess;
+    sess.set_system("Rules:\n1) be concise\n2) no emojis");
+    sess.add_user("Why top-p sampling?");
+    std::string p0 = sess.build();
+    LOG(INFO)<<p0;
+    sess.add_assistant("Top-p sampling keeps the smallest set of tokens whose cumulative probability >= p.");
+    sess.add_user("Why top-p sampling?");
+    p0 = sess.build();
+    LOG(INFO)<<p0;
+
+
+
+
+
+
+
+
+
+
+
+    return 0;
+
 
     
     if (argc != 3) 

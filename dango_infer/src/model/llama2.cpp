@@ -453,6 +453,8 @@ namespace model
     tensor::Tensor query = this->get_buffer(ModelBufferType::kQuery);
     int32_t pos = pos_tensor.index<int32_t>(0);
     // wq wk wv @ input
+
+    LOG(INFO)<<pos<<"\n";
     const auto& [key, val] = slice_kv_cache(layer_idx, pos);
     // query
     const auto& query_layer = llama_layers_->wq_layers_.at(layer_idx);
