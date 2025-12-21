@@ -46,6 +46,12 @@ def serialize_int8(file, tensor):
     file.write(b)
 
 
+def serialize_bf16(file, tensor):
+    """ writes one bf16 tensor to file that is open in wb mode """
+    d = tensor.detach().cpu().to(torch.bfloat16).view(torch.uint16).numpy()
+    file.write(d.tobytes())
+
+
 def quantize_q80(w, group_size):
     """
     takes a tensor and returns the Q8_0 quantized version
@@ -260,6 +266,52 @@ def version1_export(model, filepath):
         serialize_fp32(out_file, w)
 
     # write to binary file
+    out_file.close()
+    print(f"wrote {filepath}")
+
+
+def version4_export(model, filepath):
+    """
+    Export the model weights in bfloat16 .bin file to be read from C.
+    Layout mirrors version1_export but stores parameters as raw bf16.
+    """
+    version = 4
+
+    out_file = open(filepath, 'wb')
+    # header (256 bytes total)
+    out_file.write(struct.pack('I', 0x616b3432))  # magic
+    out_file.write(struct.pack('i', version))
+    p = model.params
+    hidden_dim = model.layers[0].feed_forward.w1.weight.shape[0]
+    n_kv_heads = p.n_heads if p.n_kv_heads is None else p.n_kv_heads
+    header = struct.pack('iiiiiii', p.dim, hidden_dim, p.n_layers, p.n_heads,
+                         n_kv_heads, p.vocab_size, p.max_seq_len)
+    out_file.write(header)
+    shared_classifier = torch.equal(model.tok_embeddings.weight, model.output.weight)
+    out_file.write(struct.pack('B', int(shared_classifier)))
+    pad = 256 - out_file.tell()
+    assert pad >= 0
+    out_file.write(b'\0' * pad)
+
+    weights = [
+        *[layer.attention_norm.weight for layer in model.layers],
+        *[layer.ffn_norm.weight for layer in model.layers],
+        model.norm.weight,
+        model.tok_embeddings.weight,
+        *[layer.attention.wq.weight for layer in model.layers],
+        *[layer.attention.wk.weight for layer in model.layers],
+        *[layer.attention.wv.weight for layer in model.layers],
+        *[layer.attention.wo.weight for layer in model.layers],
+        *[layer.feed_forward.w1.weight for layer in model.layers],
+        *[layer.feed_forward.w2.weight for layer in model.layers],
+        *[layer.feed_forward.w3.weight for layer in model.layers],
+    ]
+    if not shared_classifier:
+        weights.append(model.output.weight)
+
+    for w in weights:
+        serialize_bf16(out_file, w)
+
     out_file.close()
     print(f"wrote {filepath}")
 
@@ -524,6 +576,8 @@ def load_meta_model(model_path):
     # final classifier
     model.output.weight = nn.Parameter(state_dict['output.weight'])
     model.eval()
+    param_dtypes = {p.dtype for p in model.parameters()}
+    print(f"Model parameter dtypes: {param_dtypes}")
     return model
 
 
@@ -613,6 +667,8 @@ def model_export(model, filepath, version, dtype=torch.float32):
         version2_export(model, filepath)
     elif version == 3:
         legacy_export_quant(model, filepath)
+    elif version == 4:
+        version4_export(model, filepath)
     elif version == -1:
         hf_export(model, filepath, dtype)
     else:
@@ -656,13 +712,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath", type=str, help="the output filepath")
     parser.add_argument("--version", default=0, type=int, help="the version to export with")
-    parser.add_argument("--dtype", type=str, help="dtype of the model (fp16, fp32)", default="fp32")
+    parser.add_argument("--dtype", type=str, help="dtype of the model (fp16, fp32, bf16)", default="fp32")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--checkpoint", type=str, help="model checkpoint, .pt file")
     group.add_argument("--meta-llama", type=str, help="meta llama model path")
     group.add_argument("--hf", type=str, help="huggingface model path")
     args = parser.parse_args()
-    dtype = {"fp16": torch.float16, "fp32": torch.float32}[args.dtype]
+    dtype = {"fp16": torch.float16, "fp32": torch.float32, "bf16": torch.bfloat16}[args.dtype]
 
     if args.checkpoint:
         model = load_checkpoint(args.checkpoint)

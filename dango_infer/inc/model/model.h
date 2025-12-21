@@ -16,7 +16,7 @@ namespace model
     class Model 
     {
     public:
-        explicit Model(base::TokenizerType tokenizer_type, base::ModelType model_type,
+        explicit Model(base::DataType data_type,base::TokenizerType tokenizer_type, base::ModelType model_type,
                         std::string token_path, std::string model_path, bool is_quant_model);
 
         virtual base::Status init(base::deviceId device_id) = 0;
@@ -95,6 +95,7 @@ namespace model
         std::shared_ptr<RawModelData> raw_model_data_;
         base::ModelType model_type_ = base::ModelType::kModelTypeUnknown;
         base::TokenizerType tokenizer_type_ = base::TokenizerType::kEncodeUnknown;
+        base::DataType data_type_ = base::DataType::kDataTypeFp32;
     };
 }  // namespace model
 #endif  // DANGO_INCLUDE_MODEL_MODEL_H_

@@ -27,6 +27,10 @@ namespace op
         base::deviceId device_id = input_q.getDeviceId();
         base::DataType data_type = input_q.data_type();
 
+        if (data_type != base::DataType::kDataTypeFp32 &&
+            data_type != base::DataType::kDataTypeBf16)
+            return base::error::InvalidArgument("Unsupported data type in the rope layer.");
+
         base::Status status = check_tensor_with_dim(input_pos, base::CPUID,
             base::DataType::kDataTypeInt32, 1);
         if (!status) 
@@ -74,8 +78,15 @@ namespace op
         tensor::Tensor cos_cache = this->get_input(4);
 
 
-        base_kernel_cu::get_rope_kernel()(dim_, kv_dim_, head_size_, input_q, input_k, input_pos,
-                                        sin_cache, cos_cache, stream);
+        auto data_type = input_q.data_type();
+        if (data_type == base::DataType::kDataTypeFp32)
+            base_kernel_cu::get_rope_kernel()(dim_, kv_dim_, head_size_, input_q, input_k, input_pos,
+                                            sin_cache, cos_cache, stream);
+        else if (data_type == base::DataType::kDataTypeBf16)
+            bf16_kernel_cu::get_rope_kernel()(dim_, kv_dim_, head_size_, input_q, input_k, input_pos,
+                                            sin_cache, cos_cache, stream);
+        else
+            return base::error::InvalidArgument("Unsupported data type in the rope layer.");
         return base::error::Success();
     }
 

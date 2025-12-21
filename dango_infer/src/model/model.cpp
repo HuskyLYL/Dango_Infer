@@ -3,11 +3,13 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cuda_bf16.h>
 namespace model 
 {
-    Model::Model(base::TokenizerType tokenizer_type, base::ModelType model_type,
+    Model::Model(base::DataType data_type  ,base::TokenizerType tokenizer_type, base::ModelType model_type,
         std::string token_path, std::string model_path, bool is_quant_model)
         : tokenizer_type_(tokenizer_type),
+        data_type_(data_type),
         model_type_(model_type),
         token_path_(std::move(token_path)),
         model_path_(std::move(model_path)),
@@ -77,10 +79,19 @@ namespace model
         if (!gen_status) 
             return gen_status;
 
-        if (!is_quant_model_)
+        if (data_type_ == base::DataType::kDataTypeFp32)
             raw_model_data_ = std::make_shared<RawModelDataFp32>();
+        else if(data_type_ == base::DataType::kDataTypeBf16)
+            raw_model_data_ = std::make_shared<RawModelDataBf16>();
         else
-            raw_model_data_ = std::make_shared<RawModelDataInt8>();
+            return error::ModelParseError(
+                "Failed to retrieve the file size information from the model "
+                "file.");
+
+
+
+
+
 
         struct stat sb;
         if (fstat(fd, &sb) == -1) 
@@ -229,15 +240,28 @@ namespace model
       int32_t layer_offset = layer_idx * config_->seq_len_ * config_->kv_dim_;
       int32_t cache_offset = layer_offset + token_pos * config_->kv_dim_;
 
-      float* key_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kKeyCache).ptr<float>(cache_offset));
-      float* val_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kValueCache).ptr<float>(cache_offset));
+      if (data_type_ == base::DataType::kDataTypeBf16)
+      {
+        auto* key_cache_ptr =
+            const_cast<__nv_bfloat16*>(get_buffer(ModelBufferType::kKeyCache).ptr<__nv_bfloat16>(cache_offset));
+        auto* val_cache_ptr =
+            const_cast<__nv_bfloat16*>(get_buffer(ModelBufferType::kValueCache).ptr<__nv_bfloat16>(cache_offset));
 
+        tensor::Tensor key(config_->kv_dim_, device_id_, data_type_, key_cache_ptr);
+        tensor::Tensor val(config_->kv_dim_, device_id_, data_type_, val_cache_ptr);
 
-      tensor::Tensor key(config_->kv_dim_,device_id_,base::DataType::kDataTypeFp32, key_cache_ptr);
-      tensor::Tensor val(config_->kv_dim_,device_id_,base::DataType::kDataTypeFp32,val_cache_ptr);
+        return {key, val};
+      }
+      else
+      {
+        float* key_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kKeyCache).ptr<float>(cache_offset));
+        float* val_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kValueCache).ptr<float>(cache_offset));
 
+        tensor::Tensor key(config_->kv_dim_, device_id_, data_type_, key_cache_ptr);
+        tensor::Tensor val(config_->kv_dim_, device_id_, data_type_, val_cache_ptr);
 
-      return {key, val};
+        return {key, val};
+      }
     }
 
     tensor::Tensor Model::fill_input(const tensor::Tensor& pos_tensor,
@@ -252,8 +276,19 @@ namespace model
 
         index = pos;
 
-      tensor::Tensor input( config_->dim_,device_id_,base::DataType::kDataTypeFp32,input_embeddings.ptr<float>(index * config_->dim_));
-      return input;
+      //所以这里还是一个代理的对象
+      if (data_type_ == base::DataType::kDataTypeBf16)
+      {
+        tensor::Tensor input(config_->dim_, device_id_, data_type_,
+                             input_embeddings.ptr<__nv_bfloat16>(index * config_->dim_));
+        return input;
+      }
+      else
+      {
+        tensor::Tensor input(config_->dim_, device_id_, data_type_,
+                             input_embeddings.ptr<float>(index * config_->dim_));
+        return input;
+      }
     }
 
 }  // namespace model

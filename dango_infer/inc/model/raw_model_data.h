@@ -24,5 +24,10 @@ namespace model
         const void* weight(size_t offset) const override;
     };
 
+    struct RawModelDataBf16 : RawModelData 
+    {
+        const void* weight(size_t offset) const override;
+    };
+
 }  // namespace model
 #endif  // RAW_MODEL_DATA_H

@@ -33,6 +33,7 @@ namespace op
         int32_t dim_head_size = weight_tensor.get_dim(0);
 
         base::deviceId device_id = weight_tensor.getDeviceId();
+        base::DataType data_type = input_tensor.data_type();
 
         //这里我们要支持二维和一维
         int32_t dim_size = get_input(0).dims_size();
@@ -44,6 +45,25 @@ namespace op
 
         CHECK_EQ(weight_tensor.getDeviceId(),input_tensor.getDeviceId())
             <<"[RmsNorm]: input_tensor device must be same as  weight";
+
+        if (weight_tensor.data_type() != data_type)
+            return base::error::InvalidArgument("[RmsNorm]: weight tensor dtype must match input");
+        if (output_tensor.data_type() != data_type)
+            return base::error::InvalidArgument("[RmsNorm]: output tensor dtype must match input");
+
+        switch (data_type)
+        {
+            case base::DataType::kDataTypeFp32:
+                if (tensor_dim_head_size % 4 != 0)
+                    return base::error::InvalidArgument("RMSNorm fp32 head size must be a multiple of 4.");
+                break;
+            case base::DataType::kDataTypeBf16:
+                if (tensor_dim_head_size % 8 != 0)
+                    return base::error::InvalidArgument("RMSNorm bf16 head size must be a multiple of 8.");
+                break;
+            default:
+                return base::error::InvalidArgument("Unsupported data type in the rmsnorm layer.");
+        }
 
         base::setDevice(device_id);
 
@@ -61,7 +81,13 @@ namespace op
         auto weight = this->get_weight(0);
         auto output = this->get_output(0);
 
-        f32x4_kernel_cu::get_rmsn_kernel()(input, weight, output, stream);
+        auto data_type = input.data_type();
+        if (data_type == base::DataType::kDataTypeFp32)
+            f32x4_kernel_cu::get_rmsn_kernel()(input, weight, output, stream);
+        else if (data_type == base::DataType::kDataTypeBf16)
+            bf16x8_kernel_cu::get_rmsn_kernel()(input, weight, output, stream);
+        else
+            return base::error::InvalidArgument("Unsupported data type in the rmsnorm layer.");
 
         return base::error::Success();
     }
@@ -71,9 +97,6 @@ namespace op
 
    
 } // namespace op
-
-
-
 
 
 

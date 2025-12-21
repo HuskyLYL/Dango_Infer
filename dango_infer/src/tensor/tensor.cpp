@@ -2,6 +2,7 @@
 #include "tensor/tensor.h"
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
+#include <cuda_bf16.h>
 #include <glog/logging.h>
 #include <numeric>
 
@@ -26,6 +27,8 @@ namespace tensor
         return 1;
       case base::DataType::kDataTypeInt32: 
         return 4;
+      case base::DataType::kDataTypeBf16:
+        return sizeof(__nv_bfloat16);
       default: 
         LOG(FATAL) << "Unknown data type size for " << int(data_type);
         return 0;

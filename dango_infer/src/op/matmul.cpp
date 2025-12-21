@@ -29,6 +29,19 @@ namespace op
         base::deviceId device_id = weight_tensor.getDeviceId();
 
         base::DataType data_type = weight_tensor.data_type();
+        switch (data_type)
+        {
+            case base::DataType::kDataTypeFp32:
+                if (input_dim % 4 != 0||output_dim % 4 != 0)
+                    return base::error::InvalidArgument("Matmul fp32 input size must be a multiple of 4.");
+                break;
+            case base::DataType::kDataTypeBf16:
+                if (input_dim % 8 != 0||output_dim % 8 != 0)
+                    return base::error::InvalidArgument("Matmul bf16 input size must be a multiple of 8.");
+                break;
+            default:
+                return base::error::InvalidArgument("Unsupported data type in the matmul layer.");
+        }
 
         if (input_tensor.dims_size() != 1) 
             return base::error::InvalidArgument("The input tensor of matmul must be 1-D.");
@@ -78,11 +91,19 @@ namespace op
         if (!status) 
             return status;
   
-
-        f32x4_kernel_cu::get_matmul_kernel()(get_input(0), get_weight(0), get_output(0), 1.f, stream);
+        auto data_type = get_input(0).data_type();
+        if (data_type == base::DataType::kDataTypeFp32)
+            f32x4_kernel_cu::get_matmul_kernel()(get_input(0), get_weight(0), get_output(0), 1.f, stream);
+        else if (data_type == base::DataType::kDataTypeBf16)
+            bf16x8_kernel_cu::get_matmul_kernel()(get_input(0), get_weight(0), get_output(0), 1.f, stream);
   
         if (has_bias_) 
-            f32x4_kernel_cu::get_elementwise_kernel()(get_output(0), get_bias(0), get_output(0), stream);
+        {
+            if (data_type == base::DataType::kDataTypeFp32)
+                f32x4_kernel_cu::get_elementwise_kernel()(get_output(0), get_bias(0), get_output(0), stream);
+            else if (data_type == base::DataType::kDataTypeBf16)
+                bf16x8_kernel_cu::get_elementwise_kernel()(get_output(0), get_bias(0), get_output(0), stream);
+        }
 
 
         return base::error::Success();

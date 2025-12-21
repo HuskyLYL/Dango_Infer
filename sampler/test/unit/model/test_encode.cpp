@@ -17,7 +17,7 @@ TEST(test_model, encode)
 
     const char* tokenizer_path = "/home/ty/project-src/Dango_Infer/models/tokenizer.model";
 
-    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, false);
+    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path,base::DataType::kDataTypeFp32, false);
 
     model.init(0);
 
@@ -46,7 +46,7 @@ TEST(test_model, embedding)
 
     const char* tokenizer_path = "/home/ty/project-src/Dango_Infer/models/tokenizer.model";
 
-    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, false);
+    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeFp32,false);
 
     model.init(0);
 

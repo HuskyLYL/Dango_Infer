@@ -24,11 +24,21 @@ namespace op
 
 
     int32_t input_size = input_tensor.size();
+    base::DataType data_type = input_tensor.data_type();
 
- 
-
-    //这里完全可以继续优化
-    
+    switch (data_type) 
+    {
+      case base::DataType::kDataTypeFp32:
+        if (input_size % 4 != 0)
+          return base::error::InvalidArgument("Embedding fp32 input size must be a multiple of 4.");
+        break;
+      case base::DataType::kDataTypeBf16:
+        if (input_size % 8 != 0)
+          return base::error::InvalidArgument("Embedding bf16 input size must be a multiple of 8.");
+        break;
+      default:
+        return base::error::InvalidArgument("Unsupported data type in the embedding layer.");
+    }
 
     base::deviceId device_id = weight_tensor.getDeviceId();
 
@@ -67,9 +77,14 @@ namespace op
 
     if (!status) 
       return status;
-  
-    f32x4_kernel_cu::get_embedding_kernel()(get_input(0), get_weight(0), get_output(0), stream ? stream : nullptr);
 
+
+    auto input_tensor = get_input(0);
+    base::DataType data_type = input_tensor.data_type();
+    if (data_type == base::DataType::kDataTypeFp32)
+      f32x4_kernel_cu::get_embedding_kernel()(input_tensor, get_weight(0), get_output(0), stream ? stream : nullptr);
+    else if (data_type == base::DataType::kDataTypeBf16)
+      bf16x8_kernel_cu::get_embedding_kernel()(input_tensor, get_weight(0), get_output(0), stream ? stream : nullptr);
 
 
 

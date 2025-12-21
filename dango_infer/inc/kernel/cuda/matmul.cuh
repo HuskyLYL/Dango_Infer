@@ -10,4 +10,11 @@ namespace f32x4_kernel_cu
 
 }  // namespace f32x4_kernel_cu
 
+namespace bf16x8_kernel_cu
+{
+    void matmul_kernel_cu(const tensor::Tensor& input, const tensor::Tensor& weight,
+                      const tensor::Tensor& output, float scale = 1.f,
+                      cudaStream_t  stream = nullptr);
+}
+
 #endif  // MATMUL_KERNEL_CU_CUH

@@ -13,8 +13,8 @@ namespace model
 
  
 
-    LLama2Model::LLama2Model(base::TokenizerType tokenizer_type, std::string token_path,std::string model_path, bool is_quant_model)
-    : Model(tokenizer_type, base::ModelType::kModelTypeLLama2, std::move(token_path),std::move(model_path), is_quant_model) { }
+    LLama2Model::LLama2Model(base::TokenizerType tokenizer_type, std::string token_path,std::string model_path, base::DataType data_type,bool is_quant_model)
+    : Model(data_type,tokenizer_type, base::ModelType::kModelTypeLLama2, std::move(token_path),std::move(model_path), is_quant_model) { }
 
 
 
@@ -46,9 +46,27 @@ namespace model
             
         init_mem();
 
-        base_kernel_cu::sin_cos_cache_calc_cu(config_->head_size_, config_->seq_len_,
-            get_buffer(ModelBufferType::kSinCache),
-            get_buffer(ModelBufferType::kCosCache));
+        if (data_type_ == base::DataType::kDataTypeFp32)
+        {
+            base_kernel_cu::sin_cos_cache_calc_cu(config_->head_size_, config_->seq_len_,
+                get_buffer(ModelBufferType::kSinCache),
+                get_buffer(ModelBufferType::kCosCache));
+        }
+        else if (data_type_ == base::DataType::kDataTypeBf16)
+        {
+            bf16_kernel_cu::sin_cos_cache_calc_cu(config_->head_size_, config_->seq_len_,
+                get_buffer(ModelBufferType::kSinCache),
+                get_buffer(ModelBufferType::kCosCache));
+        }
+        else
+        {
+            return error::InvalidArgument("Unsupported data type for sin/cos cache.");
+        }
+
+        // ensure cache build finishes before later kernels
+        cudaDeviceSynchronize();
+
+
 
         sampler_ = std::make_unique<sampler::ArgmaxSampler>();
         return error::Success();
@@ -107,7 +125,7 @@ namespace model
 
       const void* weight_embedding = raw_model_data_->weight(0);
       llama_layers_->embedding_layer_->set_weight(0, {std::abs(config_->vocab_size_), config_->dim_},
-                                            weight_embedding, base::CPUID,base::DataType::kDataTypeFp32);
+                                            weight_embedding, base::CPUID,data_type_);
 
       llama_layers_->embedding_layer_->to_device(device_id_);
 
@@ -118,7 +136,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto wq = std::make_shared<op::MatmulLayer>();
-          wq->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          wq->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wq->to_device(device_id_);
           llama_layers_->wq_layers_.push_back(wq);
           
@@ -129,7 +147,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto wk = std::make_shared<op::MatmulLayer>();
-          wk->set_weight(0, {config_->kv_dim_, dim}, this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          wk->set_weight(0, {config_->kv_dim_, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wk->to_device(device_id_);
           llama_layers_->wk_layers_.push_back(wk);
           pos += config_->kv_dim_ * dim;
@@ -139,7 +157,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto wv = std::make_shared<op::MatmulLayer>();
-          wv->set_weight(0, {config_->kv_dim_, dim}, this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          wv->set_weight(0, {config_->kv_dim_, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wv->to_device(device_id_);
           llama_layers_->wv_layers_.push_back(wv);
           pos += config_->kv_dim_ * dim;
@@ -149,7 +167,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto wo = std::make_shared<op::MatmulLayer>();
-          wo->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          wo->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wo->to_device(device_id_);
           llama_layers_->wo_layers_.push_back(wo);
           pos += dim * dim;
@@ -163,7 +181,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto w1 = std::make_shared<op::MatmulLayer>();
-          w1->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos),base::CPUID,base::DataType::kDataTypeFp32);
+          w1->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos),base::CPUID,data_type_);
           w1->to_device(device_id_);
           llama_layers_->w1_layers_.push_back(w1);
           pos += dim * hidden_dim;
@@ -173,7 +191,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto w2 = std::make_shared<op::MatmulLayer>();
-          w2->set_weight(0, {dim, hidden_dim}, this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          w2->set_weight(0, {dim, hidden_dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           w2->to_device(device_id_);
           llama_layers_->w2_layers_.push_back(w2);
           pos += dim * hidden_dim;
@@ -183,7 +201,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
           auto w3 = std::make_shared<op::MatmulLayer>();
-          w3->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          w3->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           w3->to_device(device_id_);
           llama_layers_->w3_layers_.push_back(w3);
           pos += dim * hidden_dim;
@@ -198,9 +216,9 @@ namespace model
   
       if (config_->is_shared_weight_) 
       // using token embedding weight
-          llama_layers_->cls_layer_->set_weight(0, {config_->vocab_size_, dim},this->raw_model_data_->weight(0), base::CPUID,base::DataType::kDataTypeFp32);
+          llama_layers_->cls_layer_->set_weight(0, {config_->vocab_size_, dim},this->raw_model_data_->weight(0), base::CPUID,data_type_);
       else 
-          llama_layers_->cls_layer_->set_weight(0, {config_->vocab_size_, dim},this->raw_model_data_->weight(pos), base::CPUID,base::DataType::kDataTypeFp32);
+          llama_layers_->cls_layer_->set_weight(0, {config_->vocab_size_, dim},this->raw_model_data_->weight(pos), base::CPUID,data_type_);
 
       llama_layers_->cls_layer_->to_device(device_id_);
       // create rmsnorm layer
@@ -210,7 +228,7 @@ namespace model
       {
           std::shared_ptr<op::RmsNormLayer> rms_norm_layer =std::make_shared<op::RmsNormLayer>();
           const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
-          rms_norm_layer->set_weight(0, {config_->dim_}, weight_rmsnorm, base::CPUID,base::DataType::kDataTypeFp32);
+          rms_norm_layer->set_weight(0, {config_->dim_}, weight_rmsnorm, base::CPUID,data_type_);
           rms_norm_layer->to_device(device_id_);
           llama_layers_->rmsnorm_layers_.push_back(rms_norm_layer);
           rmsnorm_pos += config_->dim_;
@@ -226,7 +244,7 @@ namespace model
       {
           std::shared_ptr<op::RmsNormLayer> rms_norm_layer = std::make_shared<op::RmsNormLayer>();
           const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
-          rms_norm_layer->set_weight(0, {config_->dim_}, weight_rmsnorm, base::CPUID,base::DataType::kDataTypeFp32);
+          rms_norm_layer->set_weight(0, {config_->dim_}, weight_rmsnorm, base::CPUID,data_type_);
           rms_norm_layer->to_device(device_id_);
           llama_layers_->rmsnorm_layers_.push_back(rms_norm_layer);
           rmsnorm_pos += config_->dim_;
@@ -240,20 +258,20 @@ namespace model
       std::shared_ptr<op::RmsNormLayer> rms_final_layer = std::make_shared<op::RmsNormLayer>();
 
       const void* weight_rmsnorm_final = raw_model_data_->weight(rmsnorm_pos);
-      rms_final_layer->set_weight(0, {config_->dim_}, weight_rmsnorm_final, base::CPUID,base::DataType::kDataTypeFp32);
+      rms_final_layer->set_weight(0, {config_->dim_}, weight_rmsnorm_final, base::CPUID,data_type_);
       rms_final_layer->to_device(device_id_);
       llama_layers_->rmsnorm_layers_.push_back(rms_final_layer);
   }
 
   void LLama2Model::init_mem() 
   {
-    tensor::Tensor input_tokens(1,base::CPUID,base::DataType::kDataTypeInt32);
+    tensor::Tensor input_tokens(1,base::CPUID,data_type_);
 
-    tensor::Tensor input_embeddings(1,config_->dim_,device_id_,base::DataType::kDataTypeFp32);
+    tensor::Tensor input_embeddings(1,config_->dim_,device_id_,data_type_);
 
-    tensor::Tensor sin_cache(config_->head_size_ * config_->seq_len_,device_id_,base::DataType::kDataTypeFp32);
+    tensor::Tensor sin_cache(config_->head_size_ * config_->seq_len_,device_id_,data_type_);
 
-    tensor::Tensor cos_cache(config_->head_size_ * config_->seq_len_,device_id_,base::DataType::kDataTypeFp32);
+    tensor::Tensor cos_cache(config_->head_size_ * config_->seq_len_,device_id_,data_type_);
 
     CHECK(insert_buffer(ModelBufferType::kSinCache, sin_cache));
     CHECK(insert_buffer(ModelBufferType::kCosCache, cos_cache));
@@ -261,28 +279,28 @@ namespace model
     CHECK(insert_buffer(ModelBufferType::kInputTokens, input_tokens));
     CHECK(insert_buffer(ModelBufferType::kInputEmbeddings, input_embeddings));
 
-    tensor::Tensor rms_output(config_->dim_,device_id_,base::DataType::kDataTypeFp32);
+    tensor::Tensor rms_output(config_->dim_,device_id_,data_type_);
     CHECK(insert_buffer(ModelBufferType::kOutputRMSNorm, rms_output));
     CHECK(insert_buffer(ModelBufferType::kOutputMHA, rms_output));
     CHECK(insert_buffer(ModelBufferType::kW2Output, rms_output));
     CHECK(insert_buffer(ModelBufferType::kFFNRMSNorm, rms_output));
 
-    tensor::Tensor w1_output(config_->hidden_dim_, device_id_, base::DataType::kDataTypeFp32);
-    tensor::Tensor w3_output(config_->hidden_dim_, device_id_, base::DataType::kDataTypeFp32);
+    tensor::Tensor w1_output(config_->hidden_dim_, device_id_, data_type_);
+    tensor::Tensor w3_output(config_->hidden_dim_, device_id_, data_type_);
 
     CHECK(insert_buffer(ModelBufferType::kW1Output, w1_output));
     CHECK(insert_buffer(ModelBufferType::kW3Output, w3_output));
 
     // kv cache
-    tensor::Tensor key_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, 0,base::DataType::kDataTypeFp32);
+    tensor::Tensor key_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, 0,data_type_);
 
-    tensor::Tensor value_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, 0,base::DataType::kDataTypeFp32);
+    tensor::Tensor value_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, 0,data_type_);
 
     CHECK(insert_buffer(ModelBufferType::kKeyCache, key_cache));
     CHECK(insert_buffer(ModelBufferType::kValueCache, value_cache));
 
     // Wq query output
-    tensor::Tensor query(config_->dim_,device_id_,base::DataType::kDataTypeFp32);
+    tensor::Tensor query(config_->dim_,device_id_,data_type_);
     CHECK(insert_buffer(ModelBufferType::kQuery, query));
 
     // Pos tensor
@@ -290,14 +308,14 @@ namespace model
     CHECK(insert_buffer(ModelBufferType::kInputPos, pos_tensor));
 
     // Attention output
-    tensor::Tensor attn(config_->head_num_, config_->seq_len_, device_id_,base::DataType::kDataTypeFp32);
+    tensor::Tensor attn(config_->head_num_, config_->seq_len_, device_id_,data_type_);
     CHECK(insert_buffer(ModelBufferType::kScoreStorage, attn));
     CHECK(insert_buffer(ModelBufferType::kAttnOutput, query));
 
     // final forward output
-    tensor::Tensor forward_output(config_->vocab_size_, device_id_, base::DataType::kDataTypeFp32);
+    tensor::Tensor forward_output(config_->vocab_size_, device_id_, data_type_);
 
-    tensor::Tensor forward_output_cpu(config_->vocab_size_, base::CPUID, base::DataType::kDataTypeFp32);
+    tensor::Tensor forward_output_cpu(config_->vocab_size_, base::CPUID, data_type_);
 
 
     CHECK(insert_buffer(ModelBufferType::kForwardOutputCPU, forward_output_cpu));
@@ -386,6 +404,8 @@ namespace model
     return error::Success();
   }
 
+  //传入的实际上是CPU上的数据
+  //拷贝了一个tensor的对象,然后将数据转移到CPU之上
   op::EmbeddingOutput LLama2Model::embedding(const std::vector<int>& tokens) const 
   {
 
@@ -423,6 +443,7 @@ namespace model
       input_tokens.index<int32_t>(i) = tokens.at(i);
     }
 
+  
     tensor::Tensor input_tokens_cu = input_tokens;
     input_tokens_cu.to_device(device_id_);
 
@@ -575,8 +596,6 @@ namespace model
   int32_t LLama2Model::post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream) const 
   {
     tensor::Tensor forward_output = get_buffer(ModelBufferType::kForwardOutput);
-    const float* forward_logits = forward_output.ptr<float>();
-
     int32_t next = 0;
     if (is_prompt) 
       next = -1;

@@ -1,5 +1,6 @@
 #include "kernel/cuda/rmsn.cuh"
 #include "kernel/cuda/reduce_sum.cuh"
+#include <cuda_bf16.h>
 namespace f32x4_kernel_cu 
 {
 
@@ -175,6 +176,159 @@ namespace f32x4_kernel_cu
   }
 }
 
+namespace bf16x8_kernel_cu
+{
+  template <int32_t BLOCK_DIM>
+  static __global__ void row_bf16x8_rmsnorm_kernel(__nv_bfloat16* in, __nv_bfloat16* wei,
+                                                   __nv_bfloat16* out, int dim_size, float eps)
+  {
+    const int tid = threadIdx.x;
+
+    constexpr int pack_size = 8;
+    const int pack_num = dim_size / pack_size;
+    const int pack_off = pack_size * pack_num;
+
+    float sum = 0.0f;
+
+    for (int i = tid * pack_size; i < pack_off; i += blockDim.x * pack_size)
+    {
+      #pragma unroll
+      for (int k = 0; k < pack_size; ++k)
+      {
+        float v = __bfloat162float(in[i + k]);
+        sum += v * v;
+      }
+    }
+
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x)
+    {
+      float v = __bfloat162float(in[i]);
+      sum += v * v;
+    }
+
+    sum = base_kernel_cu::block_reduce_sum_f32<BLOCK_DIM>(sum);
+
+    __shared__ float shared_val;
+    if (threadIdx.x == 0)
+      shared_val = sum;
+    __syncthreads();
+
+    const float scale = rsqrtf(shared_val / static_cast<float>(dim_size) + eps);
+
+    for (int i = tid * pack_size; i < pack_off; i += blockDim.x * pack_size)
+    {
+      #pragma unroll
+      for (int k = 0; k < pack_size; ++k)
+      {
+        float v = __bfloat162float(in[i + k]);
+        float w = __bfloat162float(wei[i + k]);
+        out[i + k] = __float2bfloat16(scale * v * w);
+      }
+    }
+
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x)
+    {
+      float v = __bfloat162float(in[i]);
+      float w = __bfloat162float(wei[i]);
+      out[i] = __float2bfloat16(scale * v * w);
+    }
+  }
+
+  template <int32_t BLOCK_DIM>
+  static __global__ void row_dim_bf16x8_rmsnorm_kernel(__nv_bfloat16* in, __nv_bfloat16* wei,
+                                                       __nv_bfloat16* out, int seq_len,
+                                                       int dim_size, float eps)
+  {
+    const int bid = blockIdx.x;
+    const int tid = threadIdx.x;
+
+    if (bid >= seq_len)
+      return;
+
+    __nv_bfloat16* block_in = in + bid * dim_size;
+    __nv_bfloat16* block_out = out + bid * dim_size;
+
+    constexpr int pack_size = 8;
+    const int pack_num = dim_size / pack_size;
+    const int pack_off = pack_size * pack_num;
+
+    float sum = 0.0f;
+
+    for (int i = tid * pack_size; i < pack_off; i += blockDim.x * pack_size)
+    {
+      #pragma unroll
+      for (int k = 0; k < pack_size; ++k)
+      {
+        float v = __bfloat162float(block_in[i + k]);
+        sum += v * v;
+      }
+    }
+
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x)
+    {
+      float v = __bfloat162float(block_in[i]);
+      sum += v * v;
+    }
+
+    sum = base_kernel_cu::block_reduce_sum_f32<BLOCK_DIM>(sum);
+
+    __shared__ float shared_val;
+    if (threadIdx.x == 0)
+      shared_val = sum;
+    __syncthreads();
+
+    const float scale = rsqrtf(shared_val / static_cast<float>(dim_size) + eps);
+
+    for (int i = tid * pack_size; i < pack_off; i += blockDim.x * pack_size)
+    {
+      #pragma unroll
+      for (int k = 0; k < pack_size; ++k)
+      {
+        float v = __bfloat162float(block_in[i + k]);
+        float w = __bfloat162float(wei[i + k]);
+        block_out[i + k] = __float2bfloat16(scale * v * w);
+      }
+    }
+
+    for (int i = pack_off + tid; i < dim_size; i += blockDim.x)
+    {
+      float v = __bfloat162float(block_in[i]);
+      float w = __bfloat162float(wei[i]);
+      block_out[i] = __float2bfloat16(scale * v * w);
+    }
+  }
+
+  void rmsnorm_kernel(const tensor::Tensor& input, const tensor::Tensor& weight,
+                      const tensor::Tensor& output, void* stream)
+  {
+    const float eps = 1e-5f;
+    const int32_t tensor_dim = weight.get_dim(0);
+    auto cuda_stream = static_cast<cudaStream_t>(stream);
+
+    __nv_bfloat16* in_ptr = const_cast<__nv_bfloat16*>(input.ptr<__nv_bfloat16>());
+    __nv_bfloat16* wei_ptr = const_cast<__nv_bfloat16*>(weight.ptr<__nv_bfloat16>());
+    __nv_bfloat16* out_ptr = const_cast<__nv_bfloat16*>(output.ptr<__nv_bfloat16>());
+
+    if (input.dims_size() > 1)
+    {
+      const int32_t seq_len = input.get_dim(0);
+      if (cuda_stream)
+        return row_dim_bf16x8_rmsnorm_kernel<128><<<4096, 128, 0, cuda_stream>>>(
+            in_ptr, wei_ptr, out_ptr, tensor_dim, seq_len, eps);
+      else
+        return row_dim_bf16x8_rmsnorm_kernel<128><<<4096, 128>>>(
+            in_ptr, wei_ptr, out_ptr, tensor_dim, seq_len, eps);
+    }
+    else
+    {
+      if (cuda_stream)
+        return row_bf16x8_rmsnorm_kernel<128><<<1, 128, 0, cuda_stream>>>(
+            in_ptr, wei_ptr, out_ptr, tensor_dim, eps);
+      else
+        return row_bf16x8_rmsnorm_kernel<128><<<1, 128>>>(in_ptr, wei_ptr, out_ptr, tensor_dim, eps);
+    }
+  }
+}  // namespace bf16x8_kernel_cu
 
 
 

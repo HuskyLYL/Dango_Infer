@@ -31,6 +31,15 @@ namespace base_kernel_cu
       val = warp_reduce_sum_f32<NUM_WARPS>(val);
       return val;
   }
+
+
+
+
+
+
+
+
+  
 }  // namespace f32x4_kernel_cu
 
 #endif  // DANGO_INFER_REDUCE_SUM_CUH

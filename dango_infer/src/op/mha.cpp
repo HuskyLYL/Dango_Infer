@@ -29,6 +29,20 @@ namespace op
         base::deviceId device_id = query_tensor.getDeviceId();
         base::DataType data_type = query_tensor.data_type();
 
+        switch (data_type)
+        {
+            case base::DataType::kDataTypeFp32:
+                if (head_size_ % 4 != 0)
+                    return base::error::InvalidArgument("The mha layer requires head_size multiple of 4 for fp32.");
+                break;
+            case base::DataType::kDataTypeBf16:
+                if (head_size_ % 8 != 0)
+                    return base::error::InvalidArgument("The mha layer requires head_size multiple of 8 for bf16.");
+                break;
+            default:
+                return base::error::InvalidArgument("Unsupported data type in the mha layer.");
+        }
+
         if (pos_ < 0 || pos_ >= seq_len_) 
             return base::error::InvalidArgument("The mha layer position is out of range.");
 
@@ -113,9 +127,17 @@ namespace op
         const tensor::Tensor& value_cache_tensor = this->get_input(3);
 
 
-        base_kernel_cu::get_mha_kernel()(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
-            head_size_, mha_out, query_tensor, score_tensor,
-            key_cache_tensor, value_cache_tensor, stream);
+        auto data_type = query_tensor.data_type();
+        if (data_type == base::DataType::kDataTypeFp32)
+            base_kernel_cu::get_mha_kernel()(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
+                head_size_, mha_out, query_tensor, score_tensor,
+                key_cache_tensor, value_cache_tensor, stream);
+        else if (data_type == base::DataType::kDataTypeBf16)
+            bf16x8_kernel_cu::get_mha_kernel()(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
+                head_size_, mha_out, query_tensor, score_tensor,
+                key_cache_tensor, value_cache_tensor, stream);
+        else
+            return base::error::InvalidArgument("Unsupported data type in the mha layer.");
   
         return base::error::Success();
     }
