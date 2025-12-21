@@ -1,0 +1,14 @@
+I20251220 14:22:41.717164 139669805367296 main.cpp:86] Start initializing the model.
+[0;31mF20251220 14:22:41.827852 139669805367296 encode.cpp:28] The token model path is not valid, please check the path and type of token model.
+[m    @     0x7f0769acaaa0  google::LogMessage::Fail()
+    @     0x7f0769acc3a7  google::LogMessageFatal::~LogMessageFatal()
+    @     0x7f0769bca183  op::SpeEncodeLayer::SpeEncodeLayer(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, bool)
+    @     0x7f0769bb79c7  std::__detail::_MakeUniq<op::SpeEncodeLayer>::__single_object std::make_unique<op::SpeEncodeLayer, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, bool, bool>(std::__cxx11::basic_string<char, std::char_traits<char>, std::a
+    @     0x7f0769bb592e  model::Model::create_encode_layer()
+    @     0x7f0769bb5c47  model::Model::gen_model_from_file()
+    @     0x7f0769b9d272  model::LLama2Model::init(int)
+    @     0x5e33134a48ad  main
+    @     0x7f07696151ca  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    @     0x7f076961528b  __libc_start_main
+    @     0x5e331349f745  _start
+/var/lib/slurm/slurmd/job18172/slurm_script: line 20: 2290036 Aborted                 ./simple_chat ../../../../models/llama-2-7b/llama-2-7b.bin ../../../../models/llama-2-7b/tokenizer.model

@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
     LOG(INFO) << "Init Success!";
 
 
-    const std::string& sentence = "hello";
+    const std::string& sentence = "what is your name?";
 
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");

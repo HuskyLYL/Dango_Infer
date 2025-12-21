@@ -153,6 +153,7 @@ namespace model
         using namespace base;
 
         // create token encode decode layer
+        //这里是进行添加的
         if (tokenizer_type_ == TokenizerType::kEncodeSpe) 
             encode_layer_ = std::make_unique<op::SpeEncodeLayer>(this->token_path_, true, false);
         if (!encode_layer_) 

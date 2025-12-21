@@ -1,0 +1,4 @@
+I20251220 14:26:29.117276 126772118958080 main.cpp:86] Start initializing the model.
+normalizer.cc(50) LOG(INFO) precompiled_charsmap is empty. use identity normalization.
+I20251220 14:26:29.240910 126772118958080 model.cpp:137] ModelConfig dim=4096 hidden_dim=11008 layers=32 heads=32 kv_heads=32 seq_len=2048 kv_dim=4096 kv_mul=1 head_size=128 vocab_size=32000 shared_weight=0
+I20251220 14:26:32.669826 126772118958080 main.cpp:93] Init Success!

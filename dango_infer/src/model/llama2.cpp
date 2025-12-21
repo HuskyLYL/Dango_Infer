@@ -214,6 +214,7 @@ namespace model
           rms_norm_layer->to_device(device_id_);
           llama_layers_->rmsnorm_layers_.push_back(rms_norm_layer);
           rmsnorm_pos += config_->dim_;
+          
       }
 
       // skip attention.wq attention.wk attention.wv attention.wo
