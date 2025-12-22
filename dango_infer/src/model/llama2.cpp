@@ -553,18 +553,21 @@ namespace model
     // residual add
     CHECK_NE(llama_layers_->add_layer_, nullptr)<< "The add layer in the feedforward block is null pointer";
     STATUS_CHECK(llama_layers_->add_layer_->forward(input, get_buffer(ModelBufferType::kAttnOutput), input));
+    input.print("add_layer:");
 
     // ffn rmsnorm
     tensor::Tensor ffn_norm_output = get_buffer(ModelBufferType::kFFNRMSNorm);
     const auto& ffn_rmsnorm = llama_layers_->rmsnorm_layers_.at(layer_idx + config_->layer_num_);
     CHECK_NE(ffn_rmsnorm, nullptr) << "The final rmsnorm layer in the feedforward block is null pointer";
     STATUS_CHECK(ffn_rmsnorm->forward(input, ffn_norm_output));
+    ffn_norm_output.print("rmsnorm_layers");
 
     // w1
     tensor::Tensor w1_output = get_buffer(ModelBufferType::kW1Output);
     const auto& w1_layer = llama_layers_->w1_layers_.at(layer_idx);
     CHECK_NE(w1_layer, nullptr) << "The w1 layer in the feedforward block is null pointer";
     STATUS_CHECK(w1_layer->forward(ffn_norm_output, w1_output));
+
 
     // w3
     tensor::Tensor w3_ouput = get_buffer(ModelBufferType::kW3Output);
@@ -575,6 +578,7 @@ namespace model
     // SwiGLU
     CHECK_NE(llama_layers_->swiglu_layer_, nullptr) << "The swiglu layer in the feedforward block is null pointer";
     STATUS_CHECK(llama_layers_->swiglu_layer_->forward(w1_output, w3_ouput, w1_output));
+    w1_output.print("swiglu_layer:");
 
     // w2
     tensor::Tensor w2_output = get_buffer(ModelBufferType::kW2Output);
