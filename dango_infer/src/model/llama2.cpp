@@ -544,7 +544,7 @@ namespace model
     const auto& wo_layer = llama_layers_->wo_layers_.at(layer_idx);
     CHECK_NE(wo_layer, nullptr) << "The weight output layer is null pointer.";
     STATUS_CHECK(wo_layer->forward(mha_output, attn_output));
-    attn_output("attn_output:");
+    attn_output.print("attn_output:");
   }
 
   void LLama2Model::feed_forward(int32_t layer_idx, const tensor::Tensor& input) const 
@@ -601,7 +601,7 @@ namespace model
     CHECK_NE(llama_layers_->cls_layer_, nullptr);
     STATUS_CHECK(llama_layers_->cls_layer_->forward(input, forward_output));
 
-    forward_output("cls_logits");
+    forward_output.print("cls_logits");
   }
 
   int32_t LLama2Model::post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream) const 

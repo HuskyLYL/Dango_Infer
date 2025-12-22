@@ -112,8 +112,8 @@ namespace bf16x8_kernel_cu
     else 
       elementwise_add_bf16x8_kernel<<<block_num, thread_num>>>(size, in1, in2, out);
 
-    auto err = cudaGetLastError();
-    LOG(INFO)<<cudaGetErrorString(err)<<"\n";
+    //auto err = cudaGetLastError();
+    //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
   
   }
 
