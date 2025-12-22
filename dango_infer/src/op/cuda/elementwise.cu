@@ -111,6 +111,9 @@ namespace bf16x8_kernel_cu
       elementwise_add_bf16x8_kernel<<<block_num, thread_num, 0,static_cast<CUstream_st*>(stream)>>>(size, in1, in2, out);
     else 
       elementwise_add_bf16x8_kernel<<<block_num, thread_num>>>(size, in1, in2, out);
+
+    auto err = cudaGetLastError();
+    LOG(INFO)<<cudaGetErrorString(err)<<"\n";
   
   }
 

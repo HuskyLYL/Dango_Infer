@@ -24,16 +24,17 @@ namespace op
 
 
     int32_t input_size = input_tensor.size();
+    int32_t weight_dim =  weight_tensor.get_dim(1);
     base::DataType data_type = input_tensor.data_type();
 
     switch (data_type) 
     {
       case base::DataType::kDataTypeFp32:
-        if (input_size % 4 != 0)
+        if (weight_dim % 4 != 0)
           return base::error::InvalidArgument("Embedding fp32 input size must be a multiple of 4.");
         break;
       case base::DataType::kDataTypeBf16:
-        if (input_size % 8 != 0)
+        if (weight_dim % 8 != 0)
           return base::error::InvalidArgument("Embedding bf16 input size must be a multiple of 8.");
         break;
       default:
@@ -42,7 +43,7 @@ namespace op
 
     base::deviceId device_id = weight_tensor.getDeviceId();
 
-    int32_t weight_dim =  weight_tensor.get_dim(1);
+    
 
     CHECK_GT(input_size, 0);
 

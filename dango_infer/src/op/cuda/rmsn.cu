@@ -327,6 +327,10 @@ namespace bf16x8_kernel_cu
       else
         return row_bf16x8_rmsnorm_kernel<128><<<1, 128>>>(in_ptr, wei_ptr, out_ptr, tensor_dim, eps);
     }
+    //auto err = cudaGetLastError();
+    //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
+
+
   }
 }  // namespace bf16x8_kernel_cu
 

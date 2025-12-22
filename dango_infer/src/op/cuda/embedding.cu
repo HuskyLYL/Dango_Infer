@@ -108,5 +108,8 @@ namespace bf16x8_kernel_cu
             embedding_bf16x8_kernel<<<input_num, threads, 0, static_cast<cudaStream_t>(stream)>>>(in_ptr, wei_ptr, out_ptr, weight_dim);
         else
             embedding_bf16x8_kernel<<<input_num, threads>>>(in_ptr, wei_ptr, out_ptr, weight_dim);
+
+        auto err = cudaGetLastError();
+        LOG(INFO)<<cudaGetErrorString(err)<<"\n";
     }
 }

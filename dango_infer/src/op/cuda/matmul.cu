@@ -147,5 +147,8 @@ namespace bf16x8_kernel_cu
             matmul_kernel_cu_bf16<128, 1><<<output_dim, 128, 0, stream>>>(input_ptr, weight_ptr, output_ptr, input_dim, output_dim);
         else
             matmul_kernel_cu_bf16<128, 1><<<output_dim, 128>>>(input_ptr, weight_ptr, output_ptr, input_dim, output_dim);
+
+        //auto err = cudaGetLastError();
+        //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
     }
 }  // namespace bf16x8_kernel_cu

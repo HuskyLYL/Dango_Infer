@@ -112,5 +112,8 @@ namespace bf16_kernel_cu
       swiglu_kernel_cu_bf16<<<blocks, threads, shmem, stream_>>>(
           size, in1_ptr, in2_ptr, out_ptr);
     }
+
+    //auto err = cudaGetLastError();
+    //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
   }
 }  // namespace bf16_kernel_cu

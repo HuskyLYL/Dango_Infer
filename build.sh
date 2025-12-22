@@ -1,3 +1,4 @@
+source /home/lyl/spack/share/spack/setup-env.sh
 spack load glog
 spack load sentencepiece
 spack load googletest

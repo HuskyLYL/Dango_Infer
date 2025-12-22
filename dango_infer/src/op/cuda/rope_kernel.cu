@@ -183,5 +183,7 @@ namespace bf16_kernel_cu
             rope_kernel_cu_bf16<<<blocks, threads>>>(
                 pos, dim, kv_dim, head_size, q_ptr, k_ptr, sin_ptr, cos_ptr);
         }
+        //auto err = cudaGetLastError();
+        //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
     }
 } // namespace bf16_kernel_cu

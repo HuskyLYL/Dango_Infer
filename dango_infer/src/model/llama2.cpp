@@ -84,6 +84,8 @@ namespace model
       return base::error::InternalError("Unsupported int8 quant in the cpu device");
 
 
+
+
     for (int32_t layer_idx = 0; layer_idx < config_->layer_num_; ++layer_idx) 
     {
       attention_rms(layer_idx, input);
@@ -475,7 +477,7 @@ namespace model
     int32_t pos = pos_tensor.index<int32_t>(0);
     // wq wk wv @ input
 
-    LOG(INFO)<<pos<<"\n";
+
     const auto& [key, val] = slice_kv_cache(layer_idx, pos);
     // query
     const auto& query_layer = llama_layers_->wq_layers_.at(layer_idx);

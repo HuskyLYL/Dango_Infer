@@ -284,5 +284,7 @@ namespace bf16x8_kernel_cu
             multi_head_attention_kernel_bf16<<<head_num, thread_num, head_size * sizeof(float)>>>(
                 pos, seq_len, query, score, output, key_cache, value_cache, kv_dim, kv_mul, head_num,
                 head_size, layer_offset);
+        //auto err = cudaGetLastError();
+        //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
     }
 }  // namespace bf16x8_kernel_cu

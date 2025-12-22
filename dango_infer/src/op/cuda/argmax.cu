@@ -136,6 +136,9 @@ namespace bf16_kernel_cu
             CUDA_CALL(cudaStreamSynchronize(stream_));
         }
 
+        auto err = cudaGetLastError();
+        LOG(INFO)<<cudaGetErrorString(err)<<"\n";
+
         alloc_cu->release(index);
         return output_index;
     }
