@@ -88,7 +88,7 @@ namespace model
 
     for (int32_t layer_idx = 0; layer_idx < config_->layer_num_; ++layer_idx) 
     {
-      LOG(INFO)<<"layer"<<layer_idx<<":\n";
+      //LOG(INFO)<<"layer"<<layer_idx<<":\n";
       attention_rms(layer_idx, input);
       // attention (wq wk wv @ input)
       attention_qkv(layer_idx, pos_tensor);
