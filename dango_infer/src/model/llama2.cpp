@@ -83,7 +83,7 @@ namespace model
     if (device_id_ == base::CPUID && is_quant_model_) 
       return base::error::InternalError("Unsupported int8 quant in the cpu device");
 
-    input.print("Begin:");
+    //input.print("Begin:");
 
 
     for (int32_t layer_idx = 0; layer_idx < config_->layer_num_; ++layer_idx) 
@@ -468,7 +468,7 @@ namespace model
       LOG(FATAL) << "The attention rmsnorm layer is a null pointer in the llama2 model";
     
     STATUS_CHECK(rmsnorm_layer->forward(input, rmsnorm_output));
-    rmsnorm_output.print("rmsnorm_output:");
+    //rmsnorm_output.print("rmsnorm_output:");
 
   }
 
@@ -544,7 +544,7 @@ namespace model
     const auto& wo_layer = llama_layers_->wo_layers_.at(layer_idx);
     CHECK_NE(wo_layer, nullptr) << "The weight output layer is null pointer.";
     STATUS_CHECK(wo_layer->forward(mha_output, attn_output));
-    attn_output.print("attn_output:");
+    //attn_output.print("attn_output:");
   }
 
   void LLama2Model::feed_forward(int32_t layer_idx, const tensor::Tensor& input) const 
@@ -553,14 +553,14 @@ namespace model
     // residual add
     CHECK_NE(llama_layers_->add_layer_, nullptr)<< "The add layer in the feedforward block is null pointer";
     STATUS_CHECK(llama_layers_->add_layer_->forward(input, get_buffer(ModelBufferType::kAttnOutput), input));
-    input.print("add_layer:");
+    //input.print("add_layer:");
 
     // ffn rmsnorm
     tensor::Tensor ffn_norm_output = get_buffer(ModelBufferType::kFFNRMSNorm);
     const auto& ffn_rmsnorm = llama_layers_->rmsnorm_layers_.at(layer_idx + config_->layer_num_);
     CHECK_NE(ffn_rmsnorm, nullptr) << "The final rmsnorm layer in the feedforward block is null pointer";
     STATUS_CHECK(ffn_rmsnorm->forward(input, ffn_norm_output));
-    ffn_norm_output.print("rmsnorm_layers");
+    //ffn_norm_output.print("rmsnorm_layers");
 
     // w1
     tensor::Tensor w1_output = get_buffer(ModelBufferType::kW1Output);
@@ -578,7 +578,7 @@ namespace model
     // SwiGLU
     CHECK_NE(llama_layers_->swiglu_layer_, nullptr) << "The swiglu layer in the feedforward block is null pointer";
     STATUS_CHECK(llama_layers_->swiglu_layer_->forward(w1_output, w3_ouput, w1_output));
-    w1_output.print("swiglu_layer:");
+    //w1_output.print("swiglu_layer:");
 
     // w2
     tensor::Tensor w2_output = get_buffer(ModelBufferType::kW2Output);
@@ -591,7 +591,7 @@ namespace model
     STATUS_CHECK(llama_layers_->add_layer_->forward(input, w2_output, input));
 
 
-    input.print("feed_forward:");
+    //input.print("feed_forward:");
   }
 
   void LLama2Model::cls_logits(const tensor::Tensor& input) const 
@@ -605,7 +605,7 @@ namespace model
     CHECK_NE(llama_layers_->cls_layer_, nullptr);
     STATUS_CHECK(llama_layers_->cls_layer_->forward(input, forward_output));
 
-    forward_output.print("cls_logits");
+    //forward_output.print("cls_logits");
   }
 
   int32_t LLama2Model::post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream) const 
