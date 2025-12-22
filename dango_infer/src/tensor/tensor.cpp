@@ -360,7 +360,7 @@ namespace tensor
     }
     oss << "]";
 
-    LOG(INFO) << oss.str();
+    LOG(INFO) << oss.str()<<"\n";
   }
 
 
