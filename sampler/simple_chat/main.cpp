@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
     const char* checkpoint_path = argv[1];  // e.g. out/model.bin
     const char* tokenizer_path = argv[2];
 
-    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeBf16,false);
+    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeFp32,false);
 
     LOG(INFO) << "Start initializing the model.";
     auto init_status = model.init(0);
