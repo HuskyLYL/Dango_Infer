@@ -273,44 +273,56 @@ def version1_export(model, filepath):
 def version4_export(model, filepath):
     """
     Export the model weights in bfloat16 .bin file to be read from C.
-    Layout mirrors version1_export but stores parameters as raw bf16.
+    Layout matches legacy_export (v0) to align with C++ reader expectations.
     """
-    version = 4
-
     out_file = open(filepath, 'wb')
-    # header (256 bytes total)
-    out_file.write(struct.pack('I', 0x616b3432))  # magic
-    out_file.write(struct.pack('i', version))
+
     p = model.params
     hidden_dim = model.layers[0].feed_forward.w1.weight.shape[0]
     n_kv_heads = p.n_heads if p.n_kv_heads is None else p.n_kv_heads
-    header = struct.pack('iiiiiii', p.dim, hidden_dim, p.n_layers, p.n_heads,
-                         n_kv_heads, p.vocab_size, p.max_seq_len)
-    out_file.write(header)
     shared_classifier = torch.equal(model.tok_embeddings.weight, model.output.weight)
-    out_file.write(struct.pack('B', int(shared_classifier)))
-    pad = 256 - out_file.tell()
-    assert pad >= 0
-    out_file.write(b'\0' * pad)
+    vocab_size = p.vocab_size if shared_classifier else -p.vocab_size
 
-    weights = [
-        *[layer.attention_norm.weight for layer in model.layers],
-        *[layer.ffn_norm.weight for layer in model.layers],
-        model.norm.weight,
-        model.tok_embeddings.weight,
-        *[layer.attention.wq.weight for layer in model.layers],
-        *[layer.attention.wk.weight for layer in model.layers],
-        *[layer.attention.wv.weight for layer in model.layers],
-        *[layer.attention.wo.weight for layer in model.layers],
-        *[layer.feed_forward.w1.weight for layer in model.layers],
-        *[layer.feed_forward.w2.weight for layer in model.layers],
-        *[layer.feed_forward.w3.weight for layer in model.layers],
-    ]
+    header = struct.pack('iiiiiii', p.dim, hidden_dim, p.n_layers, p.n_heads,
+                         n_kv_heads, vocab_size, p.max_seq_len)
+    out_file.write(header)
+
+    # embedding
+    serialize_bf16(out_file, model.tok_embeddings.weight)
+
+    # attention norms
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.attention_norm.weight)
+    # attention weights
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.attention.wq.weight)
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.attention.wk.weight)
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.attention.wv.weight)
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.attention.wo.weight)
+
+    # ffn norms
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.ffn_norm.weight)
+    # ffn weights
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.feed_forward.w1.weight)
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.feed_forward.w2.weight)
+    for layer in model.layers:
+        serialize_bf16(out_file, layer.feed_forward.w3.weight)
+
+    # final rmsnorm
+    serialize_bf16(out_file, model.norm.weight)
+    # freqs
+    serialize_bf16(out_file, model.freqs_cos[:p.max_seq_len])
+    serialize_bf16(out_file, model.freqs_sin[:p.max_seq_len])
+
+    # final classifier if not shared
     if not shared_classifier:
-        weights.append(model.output.weight)
-
-    for w in weights:
-        serialize_bf16(out_file, w)
+        serialize_bf16(out_file, model.output.weight)
 
     out_file.close()
     print(f"wrote {filepath}")

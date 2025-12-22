@@ -72,27 +72,7 @@ int main(int argc, char* argv[])
     FLAGS_colorlogtostderr = 1;
     FLAGS_log_prefix = 1;
 
-    model::PromptSession sess;
-    sess.set_system("Rules:\n1) be concise\n2) no emojis");
-    sess.add_user("Why top-p sampling?");
-    std::string p0 = sess.build();
-    LOG(INFO)<<p0;
-    sess.add_assistant("Top-p sampling keeps the smallest set of tokens whose cumulative probability >= p.");
-    sess.add_user("Why top-p sampling?");
-    p0 = sess.build();
-    LOG(INFO)<<p0;
 
-
-
-
-
-
-
-
-
-
-
-    return 0;
 
 
     

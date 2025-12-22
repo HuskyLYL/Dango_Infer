@@ -6,10 +6,12 @@
 #include <op/rmsnorm.h>
 #include <sentencepiece_processor.h>
 #include <utility>
+#include <cuda_bf16.h>
 #include "kernel/cuda/rope_kernel.cuh"
 #include "base/tick.h"
 namespace model 
 {
+
 
  
 
@@ -64,7 +66,7 @@ namespace model
         }
 
         // ensure cache build finishes before later kernels
-        cudaDeviceSynchronize();
+        //cudaDeviceSynchronize();
 
 
 
@@ -244,6 +246,8 @@ namespace model
       {
           std::shared_ptr<op::RmsNormLayer> rms_norm_layer = std::make_shared<op::RmsNormLayer>();
           const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
+
+
           rms_norm_layer->set_weight(0, {config_->dim_}, weight_rmsnorm, base::CPUID,data_type_);
           rms_norm_layer->to_device(device_id_);
           llama_layers_->rmsnorm_layers_.push_back(rms_norm_layer);
