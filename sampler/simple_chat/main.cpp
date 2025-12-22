@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");
     fflush(stdout);
-    int steps = generate(model, sentence, 1, true);
+    int steps = generate(model, sentence, 256, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
