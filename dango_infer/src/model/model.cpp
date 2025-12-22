@@ -272,6 +272,8 @@ namespace model
       auto [input_tokens, input_embeddings] = embedding_output;
 
       int32_t index = 0;
+
+      //decode 
       if (is_prompt) 
 
         index = pos;

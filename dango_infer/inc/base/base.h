@@ -61,6 +61,9 @@ namespace base
     
     using deviceId = int;
 
+    // Global switch: true enables extra debug outputs across the project.
+    extern bool g_enable_debug_log;
+
     // avoid C++17 inline variable requirement on nvcc default standard
     static constexpr deviceId CPUID = static_cast<deviceId>(999999);
 

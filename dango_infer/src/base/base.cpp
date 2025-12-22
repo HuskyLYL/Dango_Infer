@@ -3,6 +3,9 @@
 #include <string>
 namespace base 
 {
+  // Default false: enable to turn on debug-only outputs.
+  bool g_enable_debug_log = false;
+
   //状态编码的构造类
   Status::Status(int code, std::string err_message)
     : code_(code), message_(std::move(err_message)) {}
@@ -77,4 +80,3 @@ namespace base
   }
   
 }
-
