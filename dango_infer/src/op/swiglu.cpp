@@ -70,7 +70,19 @@ namespace op
         auto input2 = this->get_input(1);
         auto output = this->get_output(0);
 
-        base_kernel_cu::get_swiglu_kernel()(input1, input2, output,stream);
+        auto data_type = input1.data_type();
+        if (data_type == base::DataType::kDataTypeFp32)
+        {
+            base_kernel_cu::get_swiglu_kernel()(input1, input2, output, stream);
+        }
+        else if (data_type == base::DataType::kDataTypeBf16)
+        {
+            bf16_kernel_cu::get_swiglu_kernel()(input1, input2, output, stream);
+        }
+        else
+        {
+            return base::error::InvalidArgument("Unsupported data type in the swiglu layer.");
+        }
         return base::error::Success();
 }
 
