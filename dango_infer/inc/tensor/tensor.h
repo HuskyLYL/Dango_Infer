@@ -3,6 +3,7 @@
 #include <driver_types.h>
 #include <glog/logging.h>
 #include <memory>
+#include <string>
 #include <vector>
 #include "base/base.h"
 #include "base/buffer.h"
@@ -88,6 +89,8 @@ namespace tensor
     const T& index(int64_t offset) const;
 
     tensor::Tensor clone() const;
+
+    void print(const std::string& name = "") const;
 
   private:
     size_t size_ = 0;

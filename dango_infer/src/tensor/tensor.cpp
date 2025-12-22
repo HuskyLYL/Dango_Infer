@@ -5,6 +5,7 @@
 #include <cuda_bf16.h>
 #include <glog/logging.h>
 #include <numeric>
+#include <sstream>
 
 namespace tensor 
 {
@@ -315,6 +316,51 @@ namespace tensor
     new_tensor.buffer_ = std::make_shared<base::Buffer>(byte_size, this->getDeviceId());
     new_tensor.buffer_->copy_from(buffer_.get());
     return new_tensor;
+  }
+
+  void Tensor::print(const std::string& name) const 
+  {
+    // Shallow copy tensor metadata, then move that view to host.
+    Tensor host_tensor = *this;
+    host_tensor.to_device(base::CPUID);
+
+    std::ostringstream oss;
+    if (!name.empty()) 
+      oss << name << " ";
+
+    oss << "[";
+    switch (host_tensor.data_type()) 
+    {
+      case base::DataType::kDataTypeFp32: 
+      {
+        const float* data = host_tensor.ptr<float>();
+        for (size_t i = 0; i < host_tensor.size(); ++i) 
+        {
+          if (i > 0) 
+            oss << ", ";
+          oss << data[i];
+        }
+        break;
+      }
+      case base::DataType::kDataTypeBf16: 
+      {
+        const __nv_bfloat16* data = host_tensor.ptr<__nv_bfloat16>();
+        for (size_t i = 0; i < host_tensor.size(); ++i) 
+        {
+          if (i > 0) 
+            oss << ", ";
+          oss << __bfloat162float(data[i]);
+        }
+        break;
+      }
+      default: 
+        LOG(WARNING) << "Tensor::print only supports fp32 and bf16, current data type: "
+                     << static_cast<int>(host_tensor.data_type());
+        return;
+    }
+    oss << "]";
+
+    LOG(INFO) << oss.str();
   }
 
 
