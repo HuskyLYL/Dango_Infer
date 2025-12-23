@@ -38,6 +38,8 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
         tensor::Tensor input = model.fill_input(pos_tensor, token_embedding, is_prompt);
         model.predict(input, pos_tensor, is_prompt, next);
     }
+
+    LOG(INFO)<<"next: "<<next<<"\n";
     if (model.is_sentence_ending(next)) 
     {
       break;
@@ -95,7 +97,7 @@ int main(int argc, char* argv[])
     const char* checkpoint_path = argv[1];  // e.g. out/model.bin
     const char* tokenizer_path = argv[2];
 
-    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeFp32,false);
+    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeBf16,false);
 
     LOG(INFO) << "Start initializing the model.";
     auto init_status = model.init(0);
@@ -112,7 +114,7 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");
     fflush(stdout);
-    int steps = generate(model, sentence, 7, true);
+    int steps = generate(model, sentence, 1, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);

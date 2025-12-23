@@ -180,7 +180,7 @@ namespace bf16x8_kernel_cu
             float part_sum = base_kernel_cu::block_reduce_sum_f32<THREAD_PER_BLOCK>(sdata[tid]);
 
             if (tid == 0)
-                output[p] = __float2bfloat16(part_sum);
+                output[p] = part_sum;
 
             __syncthreads();
         }
