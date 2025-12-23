@@ -3,6 +3,7 @@
 #include "kernel/cuda/argmax_reduce.cuh"
 #include "tensor/tensor.h"
 #include <cuda_bf16.h>
+#include <cfloat>
 namespace base_kernel_cu 
 {
 
@@ -19,7 +20,10 @@ namespace base_kernel_cu
 
 
         if (tid >= size) 
+        {
             max_index = SIZE_MAX;
+            max_value = -FLT_MAX;
+        }
         else
         {
             max_index = threadIdx.x;
@@ -90,6 +94,7 @@ namespace bf16_kernel_cu
         if (tid >= size)
         {
             max_index = SIZE_MAX;
+            max_value = -FLT_MAX;
         }
         else
         {

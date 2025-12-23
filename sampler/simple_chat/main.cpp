@@ -52,8 +52,6 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
       words.push_back(next);
     }
 
-    LOG(INFO)<<next;
-
     pos += 1;
   }
 

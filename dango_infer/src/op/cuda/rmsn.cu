@@ -160,9 +160,9 @@ namespace f32x4_kernel_cu
       const int32_t seq_len =  input.get_dim(0);
       //这里限制了最大的输入数目
       if(cuda_stream)
-        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128,0,cuda_stream>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
+        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128,0,cuda_stream>>>(in_ptr, wei_ptr, out_ptr,seq_len, tensor_dim ,eps);
       else
-        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128>>>(in_ptr, wei_ptr, out_ptr,tensor_dim ,seq_len, eps);
+        return row_dim_f32x4_rmsnorm_kernel<128><<<512,128>>>(in_ptr, wei_ptr, out_ptr,seq_len,tensor_dim , eps);
     }
     else
     {
@@ -312,12 +312,13 @@ namespace bf16x8_kernel_cu
     if (input.dims_size() > 1)
     {
       const int32_t seq_len = input.get_dim(0);
+      const dim3 blocks(seq_len);
       if (cuda_stream)
-        return row_dim_bf16x8_rmsnorm_kernel<128><<<4096, 128, 0, cuda_stream>>>(
-            in_ptr, wei_ptr, out_ptr, tensor_dim, seq_len, eps);
+        return row_dim_bf16x8_rmsnorm_kernel<128><<<blocks, 128, 0, cuda_stream>>>(
+            in_ptr, wei_ptr, out_ptr, seq_len, tensor_dim, eps);
       else
-        return row_dim_bf16x8_rmsnorm_kernel<128><<<4096, 128>>>(
-            in_ptr, wei_ptr, out_ptr, tensor_dim, seq_len, eps);
+        return row_dim_bf16x8_rmsnorm_kernel<128><<<blocks, 128>>>(
+            in_ptr, wei_ptr, out_ptr, seq_len, tensor_dim, eps);
     }
     else
     {
@@ -333,7 +334,6 @@ namespace bf16x8_kernel_cu
 
   }
 }  // namespace bf16x8_kernel_cu
-
 
 
 

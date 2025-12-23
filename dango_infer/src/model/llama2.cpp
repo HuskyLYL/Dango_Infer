@@ -83,7 +83,8 @@ namespace model
     if (device_id_ == base::CPUID && is_quant_model_) 
       return base::error::InternalError("Unsupported int8 quant in the cpu device");
 
-    //input.print("Begin:");
+    if(base::g_enable_debug_log)
+    input.print("Begin:");
 
 
     for (int32_t layer_idx = 0; layer_idx < config_->layer_num_; ++layer_idx) 
@@ -317,7 +318,7 @@ namespace model
     CHECK(insert_buffer(ModelBufferType::kAttnOutput, query));
 
     // final forward output
-    tensor::Tensor forward_output(config_->vocab_size_, device_id_, data_type_);
+    tensor::Tensor forward_output(config_->vocab_size_, device_id_, base::DataType::kDataTypeFp32);
 
     tensor::Tensor forward_output_cpu(config_->vocab_size_, base::CPUID, data_type_);
 
@@ -556,7 +557,8 @@ namespace model
     // residual add
     CHECK_NE(llama_layers_->add_layer_, nullptr)<< "The add layer in the feedforward block is null pointer";
     STATUS_CHECK(llama_layers_->add_layer_->forward(input, get_buffer(ModelBufferType::kAttnOutput), input));
-    //input.print("add_layer:");
+    if(base::g_enable_debug_log)
+      input.print("add_layer:");
 
     // ffn rmsnorm
     tensor::Tensor ffn_norm_output = get_buffer(ModelBufferType::kFFNRMSNorm);
@@ -571,13 +573,16 @@ namespace model
     const auto& w1_layer = llama_layers_->w1_layers_.at(layer_idx);
     CHECK_NE(w1_layer, nullptr) << "The w1 layer in the feedforward block is null pointer";
     STATUS_CHECK(w1_layer->forward(ffn_norm_output, w1_output));
-
+    if(base::g_enable_debug_log)
+      w1_output.print("w1");
 
     // w3
     tensor::Tensor w3_ouput = get_buffer(ModelBufferType::kW3Output);
     const auto& w3_layer = llama_layers_->w3_layers_.at(layer_idx);
     CHECK_NE(w3_layer, nullptr) << "The w3 layer in the feedforward block is null pointer";
     STATUS_CHECK(w3_layer->forward(ffn_norm_output, w3_ouput));
+    if(base::g_enable_debug_log)
+      w3_ouput.print("w3");
 
     // SwiGLU
     CHECK_NE(llama_layers_->swiglu_layer_, nullptr) << "The swiglu layer in the feedforward block is null pointer";
@@ -590,6 +595,8 @@ namespace model
     const auto& w2_layer = llama_layers_->w2_layers_.at(layer_idx);
     CHECK_NE(w2_layer, nullptr) << "The w2 layer in the feedforward block is null pointer";
     STATUS_CHECK(w2_layer->forward(w1_output, w2_output));
+    if(base::g_enable_debug_log)
+      w2_output.print("w2");
 
     // residual add
     CHECK_NE(llama_layers_->add_layer_, nullptr) << "The add layer in the feedforward block is null pointer";
@@ -620,7 +627,14 @@ namespace model
       next = -1;
     else 
       next = static_cast<int32_t>(sampler_->sample(forward_output, stream));
-    
+
+    if(base::g_enable_debug_log)
+    {
+        LOG(INFO)<<"next"<<next<<"\n";
+        next = static_cast<int32_t>(sampler_->sample(forward_output, stream));
+
+    }
+      
     return next;
   }
 

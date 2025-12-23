@@ -156,15 +156,15 @@ namespace bf16x8_kernel_cu
 {
     constexpr static int thread_num = 256;
 
-    __device__ void softmax_gpu_bf16(__nv_bfloat16* __restrict__ x, int size) 
+    __device__ void softmax_gpu_float(float* __restrict__ x, int size) 
     {
         int tid  = threadIdx.x;
         int step = blockDim.x;
 
-        float max_val = tid < size ? __bfloat162float(x[tid]) : -FLT_MAX;
+        float max_val = tid < size ? x[tid] : -FLT_MAX;
         for (int i = tid + step; i < size; i += step) 
         {
-            float v = __bfloat162float(x[i]);
+            float v = x[i];
             if (v > max_val)
                 max_val = v;
         }
@@ -182,8 +182,8 @@ namespace bf16x8_kernel_cu
         float sum = 0.0f;
         for (int i = tid; i < size; i += step) 
         {
-            float v = expf(__bfloat162float(x[i]) - max_val);
-            x[i] = __float2bfloat16(v);
+            float v = expf(x[i] - max_val);
+            x[i] = v;
             sum += v;
         }
 
@@ -193,9 +193,8 @@ namespace bf16x8_kernel_cu
         __syncthreads();
 
         sum = shared_val;
-        //好办法呀,sum和中间计算都在float,最后再精度转换
         for (int i = tid; i < size; i += step) 
-            x[i] = __float2bfloat16(__bfloat162float(x[i]) / sum);
+            x[i] = x[i] / sum;
     }
 
     __global__ void multi_head_attention_kernel_bf16(int32_t pos, int32_t seq_len,
@@ -207,7 +206,9 @@ namespace bf16x8_kernel_cu
         if (head >= head_num)
             return;
 
-        extern __shared__ float s_query_head[];
+        extern __shared__ float shared[];
+        float* s_query_head = shared;
+        float* s_score      = shared + head_size;
         float scale = 1.f / sqrtf(float(head_size));
         const __nv_bfloat16* query_head = query + head * head_size;
 
@@ -241,12 +242,15 @@ namespace bf16x8_kernel_cu
                 score += s_query_head[i] * __bfloat162float(key_head[i]);
 
             score *= scale;
-            score_head[t] = __float2bfloat16(score);
+            s_score[t] = score;
         }
 
         __syncthreads();
-        softmax_gpu_bf16(score_head, pos + 1);
+        softmax_gpu_float(s_score, pos + 1);
         __syncthreads();
+
+        for (int t = threadIdx.x; t <= pos; t += blockDim.x)
+            score_head[t] = __float2bfloat16(s_score[t]);
 
         __nv_bfloat16* output_head = output + head * head_size;
         for (int i = threadIdx.x; i < head_size; i += blockDim.x) 
@@ -255,7 +259,7 @@ namespace bf16x8_kernel_cu
             for (int t = 0; t <= pos; t++) 
             {
                 const __nv_bfloat16* value_head = value_cache + layer_offset + t * kv_dim + head_offset;
-                float score = __bfloat162float(score_head[t]);
+                float score = s_score[t];
                 value += score * __bfloat162float(value_head[i]);
             }
             output_head[i] = __float2bfloat16(value);
@@ -276,12 +280,13 @@ namespace bf16x8_kernel_cu
         const __nv_bfloat16* key_cache = key_cache_tensor.ptr<__nv_bfloat16>();
         const __nv_bfloat16* value_cache = value_cache_tensor.ptr<__nv_bfloat16>();
 
+        size_t shared_mem = (head_size + pos + 1) * sizeof(float);
         if (stream)
-            multi_head_attention_kernel_bf16<<<head_num, thread_num, head_size * sizeof(float), stream>>>(
+            multi_head_attention_kernel_bf16<<<head_num, thread_num, shared_mem, stream>>>(
                 pos, seq_len, query, score, output, key_cache, value_cache, kv_dim, kv_mul, head_num,
                 head_size, layer_offset);
         else
-            multi_head_attention_kernel_bf16<<<head_num, thread_num, head_size * sizeof(float)>>>(
+            multi_head_attention_kernel_bf16<<<head_num, thread_num, shared_mem>>>(
                 pos, seq_len, query, score, output, key_cache, value_cache, kv_dim, kv_mul, head_num,
                 head_size, layer_offset);
         //auto err = cudaGetLastError();
