@@ -630,8 +630,9 @@ namespace model
 
     if(base::g_enable_debug_log)
     {
-        //LOG(INFO)<<"next"<<next<<"\n";
-        next = static_cast<int32_t>(sampler_->sample(forward_output, stream));
+        
+        int32_t BBQ = static_cast<int32_t>(sampler_->sample(forward_output, stream));
+        LOG(INFO)<<"next"<<BBQ<<"\n";
 
     }
       
