@@ -25,7 +25,7 @@ namespace op
 
     int32_t input_size = input_tensor.size();
     int32_t weight_dim =  weight_tensor.get_dim(1);
-    base::DataType data_type = input_tensor.data_type();
+    base::DataType data_type = weight_tensor.data_type();
 
     switch (data_type) 
     {
@@ -49,7 +49,11 @@ namespace op
 
     
   
-    base::Status status = check_tensor_with_dim(input_tensor, device_id, input_tensor.data_type(), input_size);
+    // input tokens must be int32
+    if (input_tensor.data_type() != base::DataType::kDataTypeInt32)
+      return base::error::InvalidArgument("Embedding input tensor must be int32 tokens.");
+
+    base::Status status = check_tensor_with_dim(input_tensor, device_id, base::DataType::kDataTypeInt32, input_size);
     if (!status) 
     {
       LOG(ERROR) << "The input tensor error in the embedding layer.";
@@ -81,7 +85,8 @@ namespace op
 
 
     auto input_tensor = get_input(0);
-    base::DataType data_type = input_tensor.data_type();
+    auto weight_tensor = get_weight(0);
+    base::DataType data_type = weight_tensor.data_type();
     if (data_type == base::DataType::kDataTypeFp32)
       f32x4_kernel_cu::get_embedding_kernel()(input_tensor, get_weight(0), get_output(0), stream ? stream : nullptr);
     else if (data_type == base::DataType::kDataTypeBf16)

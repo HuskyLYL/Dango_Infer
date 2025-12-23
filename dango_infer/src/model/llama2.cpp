@@ -270,7 +270,8 @@ namespace model
 
   void LLama2Model::init_mem() 
   {
-    tensor::Tensor input_tokens(1,base::CPUID,data_type_);
+    // token ids must stay int32 regardless of model precision to avoid buffer underruns
+    tensor::Tensor input_tokens(1, base::CPUID, base::DataType::kDataTypeInt32);
 
     tensor::Tensor input_embeddings(1,config_->dim_,device_id_,data_type_);
 
