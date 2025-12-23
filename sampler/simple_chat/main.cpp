@@ -25,7 +25,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     pos_tensor.index<int32_t>(0) = pos;
     if (pos < prompt_len - 1) 
     {
-      base::g_enable_debug_log = false;
+      base::g_enable_debug_log = true;
       tensor::Tensor input = model.fill_input(pos_tensor, prompt_embedding, is_prompt);
       model.predict(input, pos_tensor, is_prompt, next);
     } 
