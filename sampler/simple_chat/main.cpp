@@ -39,7 +39,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
         model.predict(input, pos_tensor, is_prompt, next);
     }
 
-    LOG(INFO)<<"next: "<<next<<"\n";
+
     if (model.is_sentence_ending(next)) 
     {
       break;
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
     LOG(INFO) << "Init Success!";
 
 
-    const std::string& sentence = "what is your name?";
+    const std::string& sentence = "why is the sky blue?";
 
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");

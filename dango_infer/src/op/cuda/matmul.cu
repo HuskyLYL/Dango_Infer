@@ -148,7 +148,7 @@ namespace bf16x8_kernel_cu
 
         __nv_bfloat16* output_ptr       = const_cast<__nv_bfloat16*>(output.ptr<__nv_bfloat16>());
         if (stream)
-                matmul_kernel_cu_bf16<128, 1><<<output_dim, 128, 0, stream>>>(input_ptr, weight_ptr, output_ptr, input_dim, output_dim);
+            matmul_kernel_cu_bf16<128, 1><<<output_dim, 128, 0, stream>>>(input_ptr, weight_ptr, output_ptr, input_dim, output_dim);
         else
             matmul_kernel_cu_bf16<128, 1><<<output_dim, 128>>>(input_ptr, weight_ptr, output_ptr, input_dim, output_dim);
         
