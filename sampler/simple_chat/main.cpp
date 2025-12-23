@@ -109,12 +109,12 @@ int main(int argc, char* argv[])
     LOG(INFO) << "Init Success!";
 
 
-    const std::string& sentence = "why is the sky blue?";
+    const std::string& sentence = "why the sky is blue? Can you tell me?";
 
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");
     fflush(stdout);
-    int steps = generate(model, sentence, 30, true);
+    int steps = generate(model, sentence, 108, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
