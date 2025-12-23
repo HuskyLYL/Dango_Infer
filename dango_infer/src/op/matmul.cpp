@@ -63,12 +63,12 @@ namespace op
         if (output_tensor.dims_size() != 1) 
             return base::error::InvalidArgument("The output tensor of matmul must be 1-D.");
 
-        //status = check_tensor_with_dim(output_tensor, device_id, data_type, output_dim);
-        //if (!status) 
-        //{
-        //    LOG(ERROR) << "The output tensor error in the matmul layer.";
-        //    return status;
-        //}
+        status = check_tensor_with_dim(output_tensor, device_id, data_type, output_dim);
+        if (!status) 
+        {
+            LOG(ERROR) << "The output tensor error in the matmul layer.";
+            return status;
+        }
 
         if (has_bias_) 
         {

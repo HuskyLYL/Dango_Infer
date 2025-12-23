@@ -318,7 +318,7 @@ namespace model
     CHECK(insert_buffer(ModelBufferType::kAttnOutput, query));
 
     // final forward output
-    tensor::Tensor forward_output(config_->vocab_size_, device_id_, base::DataType::kDataTypeFp32);
+    tensor::Tensor forward_output(config_->vocab_size_, device_id_, data_type_);
 
     tensor::Tensor forward_output_cpu(config_->vocab_size_, base::CPUID, data_type_);
 
