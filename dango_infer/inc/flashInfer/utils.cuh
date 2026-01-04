@@ -1,0 +1,43 @@
+#ifndef FLASHINFER_UTILS_CUH_
+#define FLASHINFER_UTILS_CUH_
+#define DISPATCH_GQA_GROUP_SIZE(group_size, GROUP_SIZE, ...) \
+  if (group_size == 1) {                                     \
+    constexpr size_t GROUP_SIZE = 1;                         \
+    __VA_ARGS__                                              \
+  } else if (group_size == 2) {                              \
+    constexpr size_t GROUP_SIZE = 2;                         \
+    __VA_ARGS__                                              \
+  } else if (group_size == 3) {                              \
+    constexpr size_t GROUP_SIZE = 3;                         \
+    __VA_ARGS__                                              \
+  } else if (group_size == 4) {                              \
+    constexpr size_t GROUP_SIZE = 4;                         \
+    __VA_ARGS__                                              \
+  } else if (group_size == 8) {                              \
+    constexpr size_t GROUP_SIZE = 8;                         \
+    __VA_ARGS__                                              \
+  } else {                                                   \
+    std::ostringstream err_msg;                              \
+    err_msg << "Unsupported group_size: " << group_size;     \
+    FLASHINFER_ERROR(err_msg.str());                         \
+  }
+#endif  // FLASHINFER_UTILS_CUH_
+
+#define DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, ...) \
+  if (compute_capacity.first >= 8) {                                                        \
+    constexpr uint32_t NUM_STAGES_SMEM = 2;                                                 \
+    __VA_ARGS__                                                                             \
+  } else {                                                                                  \
+    constexpr uint32_t NUM_STAGES_SMEM = 1;                                                 \
+    __VA_ARGS__                                                                             \
+  }
+
+#define FLASHINFER_CUDA_CALL(func, ...)                                                     \
+  {                                                                                         \
+    cudaError_t e = (func);                                                                 \
+    if (e != cudaSuccess) {                                                                 \
+      std::cerr << "CUDA Error: " << cudaGetErrorString(e) << " (" << e << ") " << __FILE__ \
+                << ": line " << __LINE__ << " at function " << STR(func) << std::endl;      \
+      return e;                                                                             \
+    }                                                                                       \
+  }
