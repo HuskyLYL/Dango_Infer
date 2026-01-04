@@ -1,8 +1,11 @@
 /build/
 /lib/
 /models/
+/log/
 # Prerequisites
 *.d
+
+*.slurm
 
 # Compiled Object files
 *.slo
