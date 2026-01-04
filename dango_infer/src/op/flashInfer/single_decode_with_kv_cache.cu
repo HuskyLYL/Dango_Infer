@@ -7,33 +7,7 @@
 #include<tensor/tensor.h>
 namespace flashInfer
 {
-    template<uint32_t vec_size>
-    __device__ __forceinline__ void sync_state(state_t<vec_size>& st, float* smem, float* smem_md,
-                                               const uint32_t tx, const uint32_t ty, const uint32_t tz,
-                                                uint32_t bdx, uint32_t bdy, uint32_t bdz) 
-    {
-        if constexpr (bdz > 1) 
-        {
-            constexpr uint32_t head_dim = bdx * vec_size;
 
-            st.o.store(smem + (tz * bdy + ty) * head_dim + tx * vec_size);
-    
-            smem_md[(tz * bdy + ty) * 2] = st.m;
-            smem_md[(tz * bdy + ty) * 2 + 1] = st.d;
-            __syncthreads();
-            st.init();
-            #pragma unroll
-            for (uint32_t j = 0; j < bdz; ++j) 
-            {
-                float mz = smem_md[(j * bdy + ty) * 2], dz = smem_md[(j * bdy + ty) * 2 + 1];
-                vec_t<float, vec_size> oz;
-                oz.load(smem + (j * bdy + ty) * head_dim + tx * vec_size);
-                st.merge(oz, mz, dz);
-            }
-            
-
-        }
-    }
 
 
 
