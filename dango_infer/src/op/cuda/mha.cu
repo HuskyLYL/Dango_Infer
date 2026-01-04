@@ -1,6 +1,7 @@
 #include <tensor/tensor.h>
 #include <cfloat>
 #include <cub/cub.cuh>
+#include <cuda/functional>        // cuda::maximum
 #include "kernel/cuda/mha.cuh"
 #include <base/tick.h>
 #include <cuda_bf16.h>
@@ -27,7 +28,7 @@ namespace base_kernel_cu
         using BlockReduce = cub::BlockReduce<float, thread_num>;
         __shared__ BlockReduce::TempStorage temp;
         __shared__ float shared_val;
-        max_val = BlockReduce(temp).Reduce(max_val, cub::Max());
+        max_val = BlockReduce(temp).Reduce(max_val,cuda::maximum{});
 
 
         if (threadIdx.x == 0) 
@@ -172,7 +173,7 @@ namespace bf16x8_kernel_cu
         using BlockReduce = cub::BlockReduce<float, thread_num>;
         __shared__ BlockReduce::TempStorage temp;
         __shared__ float shared_val;
-        max_val = BlockReduce(temp).Reduce(max_val, cub::Max());
+        max_val = BlockReduce(temp).Reduce(max_val, cuda::maximum{});
 
         if (threadIdx.x == 0)
             shared_val = max_val;
