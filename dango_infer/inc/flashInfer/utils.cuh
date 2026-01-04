@@ -32,12 +32,3 @@
     __VA_ARGS__                                                                             \
   }
 
-#define FLASHINFER_CUDA_CALL(func, ...)                                                     \
-  {                                                                                         \
-    cudaError_t e = (func);                                                                 \
-    if (e != cudaSuccess) {                                                                 \
-      std::cerr << "CUDA Error: " << cudaGetErrorString(e) << " (" << e << ") " << __FILE__ \
-                << ": line " << __LINE__ << " at function " << STR(func) << std::endl;      \
-      return e;                                                                             \
-    }                                                                                       \
-  }
