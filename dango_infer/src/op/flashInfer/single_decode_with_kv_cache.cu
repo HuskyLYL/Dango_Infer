@@ -90,7 +90,7 @@ namespace flashinfer
                 /*batch_idx=*/0,
                 k_smem + (stage_idx * bdz + tz) * bdy * tile_size_per_bdx * head_dim, q_vec, freq,
                 consumer_kv_idx_base, iter * bdy * tile_size_per_bdx * bdz, kv_chunk_size, qo_head_idx,
-                kv_head_idx, s, st_local, tx, ty, tz,bdx, bdy * tile_size_per_bdx);
+                kv_head_idx, s, st_local, tx, ty, tz, bdy * tile_size_per_bdx, bdx);
             __syncthreads();
 
             // load k
