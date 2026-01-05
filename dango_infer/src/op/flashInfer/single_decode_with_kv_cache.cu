@@ -40,7 +40,7 @@ namespace flashinfer
                 const float* q = query_tensor.ptr<float>();
                 const float* k = key_cache_tensor.ptr<float>(layer_index * seq_len * kv_dim);
                 const float* v = value_cache_tensor.ptr<float>(layer_index * seq_len * kv_dim);
-                const float* o = mha_out.ptr<float>();
+                float* o = mha_out.ptr<float>();
                 status = SingleDecodeWithKVCacheDispatched<float>(head_size,stream,
                     num_qo_heads,num_kv_heads ,kv_len,
                     q,k,v,o,
@@ -54,7 +54,7 @@ namespace flashinfer
                 const __nv_bfloat16* q = query_tensor.ptr<__nv_bfloat16>();
                 const __nv_bfloat16* k = key_cache_tensor.ptr<__nv_bfloat16>(layer_index * seq_len * kv_dim);
                 const __nv_bfloat16* v = value_cache_tensor.ptr<__nv_bfloat16>(layer_index * seq_len * kv_dim);
-                const __nv_bfloat16* o = mha_out.ptr<__nv_bfloat16>();
+                __nv_bfloat16* o = mha_out.ptr<__nv_bfloat16>();
                 status = SingleDecodeWithKVCacheDispatched<__nv_bfloat16>(head_size,stream,
                     num_qo_heads,num_kv_heads ,kv_len,
                     q,k,v,o,
