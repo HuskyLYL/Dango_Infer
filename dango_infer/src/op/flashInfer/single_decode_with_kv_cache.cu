@@ -5,7 +5,8 @@
 #include<flashInfer/utils.cuh>
 #include<flashInfer/state.cuh>
 #include<tensor/tensor.h>
-namespace flashInfer
+
+namespace flashinfer
 {
 
 
