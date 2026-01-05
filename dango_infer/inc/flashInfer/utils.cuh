@@ -32,3 +32,12 @@
     __VA_ARGS__                                                                             \
   }
 
+namespace flashinfer
+{
+  template <typename T1, typename T2>
+  __forceinline__ __device__ __host__ T1 round_up(const T1 x, const T2 y) 
+  {
+    return ceil_div(x, y) * y;
+  }
+
+}
