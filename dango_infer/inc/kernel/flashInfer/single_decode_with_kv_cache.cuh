@@ -7,6 +7,7 @@
 #include<flashInfer/utils.cuh>
 #include<flashInfer/state.cuh>
 #include<tensor/tensor.h>
+#include<base/base.h>
 
 namespace flashinfer
 {
@@ -205,54 +206,13 @@ namespace flashinfer
         return cudaSuccess;
     }
 
-    template <typename T>
+
     void single_decode_with_kv_cache(int32_t pos, int32_t head_num, int32_t layer_index, int32_t seq_len,
         int32_t kv_dim, int32_t kv_mul, int32_t head_size, const tensor::Tensor& mha_out,
         const tensor::Tensor& query_tensor, const tensor::Tensor& score_tensor,
         const tensor::Tensor& key_cache_tensor, const tensor::Tensor& value_cache_tensor,
-        cudaStream_t stream)
-    {
-
-
-        unsigned int num_qo_heads = head_num;
-        unsigned int head_dim_qk = head_size;
-        unsigned int head_dim_vo = head_size;
-        unsigned int kv_len, num_kv_heads;
-        kv_len = pos+1;
-        num_kv_heads = head_num/kv_mul;
-
-    
-
-
-
-        const T* q = query_tensor.ptr<T>();
-        //这里的seq_len就是最长的g山下文
-        const T* k = key_cache_tensor.ptr<T>(layer_index * seq_len * kv_dim);
-        const T* v = value_cache_tensor.ptr<T>(layer_index * seq_len * kv_dim);
-        const T* o = mha_out.ptr<T>();
-
-        const uint32_t q_stride_n = num_qo_heads * head_dim_qk;
-        const uint32_t q_stride_h = head_dim_qk;
-        const uint32_t kv_stride_n = num_kv_heads * head_dim_vo;
-        const uint32_t kv_stride_h = head_dim_vo;
-
-        uint32_t kv_chunk_size = 0;
-
-        cudaError_t status = SingleDecodeWithKVCacheDispatched<T>(head_size,stream,
-            num_qo_heads,num_kv_heads ,kv_len,
-            q,k,v,o,
-            q_stride_n,q_stride_h,kv_stride_n,kv_stride_h 
-        );
-        
-
-
-
-
-        CHECK(status == cudaSuccess);
-
-
-          
-    }
+        cudaStream_t stream);
+  
 
 
 

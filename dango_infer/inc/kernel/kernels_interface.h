@@ -123,6 +123,10 @@ namespace bf16_kernel_cu
 
 }
 
+// flashinfer single token decode entry
+
+
+
 
 
 
