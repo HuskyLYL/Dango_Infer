@@ -54,7 +54,7 @@ namespace flashinfer
         {
             for (uint32_t j = 0; j < tile_size_per_bdx; ++j) 
             {
-                cp_async::pred_load<vec_bits, PrefetchMode::kPrefetch, SharedMemFillMode::kNoFill>(
+                cp_async::pred_load<vec_bits, cp_async::PrefetchMode::kPrefetch, cp_async::SharedMemFillMode::kNoFill>(
                     k_smem + (((iter * bdz + tz) * bdy + ty) * tile_size_per_bdx + j) * head_dim +
                         tx * vec_size,
                     k + (producer_kv_idx_base + (tz * bdy + ty) * tile_size_per_bdx + j) * kv_stride_n +
@@ -64,7 +64,7 @@ namespace flashinfer
             cp_async::commit_group();
             for (uint32_t j = 0; j < tile_size_per_bdx; ++j) 
             {
-                cp_async::pred_load<vec_bits, PrefetchMode::kPrefetch, SharedMemFillMode::kFillZero>(
+                cp_async::pred_load<vec_bits, cp_async::PrefetchMode::kPrefetch, cp_async::SharedMemFillMode::kFillZero>(
                     v_smem + (((iter * bdz + tz) * bdy + ty) * tile_size_per_bdx + j) * head_dim +
                         tx * vec_size,
                     v + (producer_kv_idx_base + (tz * bdy + ty) * tile_size_per_bdx + j) * kv_stride_n +
@@ -96,7 +96,7 @@ namespace flashinfer
             // load k
             for (uint32_t j = 0; j < tile_size_per_bdx; ++j) 
             {
-                cp_async::pred_load<vec_bits, PrefetchMode::kPrefetch, SharedMemFillMode::kNoFill>(
+                cp_async::pred_load<vec_bits, cp_async::PrefetchMode::kPrefetch, cp_async::SharedMemFillMode::kNoFill>(
                     k_smem + (((stage_idx * bdz + tz) * bdy + ty) * tile_size_per_bdx + j) * head_dim +
                         tx * vec_size,
                     k + (producer_kv_idx_base + (tz * bdy + ty) * tile_size_per_bdx + j) * kv_stride_n +
@@ -116,7 +116,7 @@ namespace flashinfer
             // load v
             for (uint32_t j = 0; j < tile_size_per_bdx; ++j) 
             {
-                cp_async::pred_load<vec_bits, PrefetchMode::kPrefetch, SharedMemFillMode::kFillZero>(
+                cp_async::pred_load<vec_bits, cp_async::PrefetchMode::kPrefetch, cp_async::SharedMemFillMode::kFillZero>(
                     v_smem + (((stage_idx * bdz + tz) * bdy + ty) * tile_size_per_bdx + j) * head_dim +
                         tx * vec_size,
                     v + (producer_kv_idx_base + (tz * bdy + ty) * tile_size_per_bdx + j) * kv_stride_n +
