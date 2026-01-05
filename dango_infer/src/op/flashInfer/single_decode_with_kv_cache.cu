@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <glog/logging.h>
 #include<flashInfer/pos_enc.cuh>
 #include<flashInfer/decode.cuh>
 #include<flashInfer/vec_dtypes.cuh>
@@ -166,7 +167,7 @@ namespace flashinfer
         constexpr uint32_t vec_size = 16UL / sizeof(T);
         const uint32_t bdx = head_dim/ vec_size;
         auto compute_capacity = GetCudaComputeCapability();
-        static_assert(bdx <= 32U);
+        CHECK(bdx <= 32U);
 
         const uint32_t group_size = num_qo_heads / num_kv_heads;
 
