@@ -48,9 +48,9 @@ namespace flashinfer
                                                const uint32_t tx, const uint32_t ty, const uint32_t tz,
                                                 uint32_t bdx, uint32_t bdy, uint32_t bdz) 
     {
-        if constexpr (bdz > 1) 
+        if (bdz > 1) 
         {
-            constexpr uint32_t head_dim = bdx * vec_size;
+            uint32_t head_dim = bdx * vec_size;
 
             st.o.store(smem + (tz * bdy + ty) * head_dim + tx * vec_size);
     
@@ -214,7 +214,9 @@ namespace flashinfer
         // pipelining k/v tiles loading and state updating
         uint32_t consumer_kv_idx_base = chunk_start, stage_idx = 0;
         state_t<vec_size> st_local;
-        float s[bdy * tile_size_per_bdx];
+        //float s[bdy * tile_size_per_bdx];
+
+        float* s = reinterpret_cast<float*>(smem_md + 2* bdy * bdz );
 
         #pragma unroll 2
         for (uint32_t iter = 0; iter < ceil_div(kv_chunk_size, tile_size_per_bdx * bdy * bdz); ++iter) 
@@ -313,11 +315,11 @@ namespace flashinfer
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
-            const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float);
+            const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float)+bdy * tile_size_per_bdx*sizeof(float);
 
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
-            uint32_t kv_chunk_size = seq_len;
+            //uint32_t kv_chunk_size = seq_len;
 
             if(stream)
             
