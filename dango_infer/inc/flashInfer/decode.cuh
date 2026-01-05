@@ -1,6 +1,6 @@
 #include<flashInfer/vec_dtypes.cuh>
 
-namespace flashInfer
+namespace flashinfer
 {
 
     template<uint32_t vec_size>
