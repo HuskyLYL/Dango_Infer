@@ -87,7 +87,7 @@ namespace flashinfer
             cp_async::wait_group<2 * num_stages_smem - 1>();
             __syncthreads();
             compute_qk<vec_size, T>(
-                params,  /*batch_idx=*/0,
+                /*batch_idx=*/0,
                 k_smem + (stage_idx * bdz + tz) * bdy * tile_size_per_bdx * head_dim, q_vec, freq,
                 consumer_kv_idx_base, iter * bdy * tile_size_per_bdx * bdz, kv_chunk_size, qo_head_idx,
                 kv_head_idx, s, st_local, tx, ty, tz,bdx, bdy * tile_size_per_bdx);
