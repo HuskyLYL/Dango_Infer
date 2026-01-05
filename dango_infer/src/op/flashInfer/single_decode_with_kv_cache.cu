@@ -1,4 +1,5 @@
 #include<kernel/flashInfer/single_decode_with_kv_cache.cuh>
+#include<flashInfer/decode.cuh>
 #include <cuda_bf16.h>
 #include <glog/logging.h>
 namespace flashinfer

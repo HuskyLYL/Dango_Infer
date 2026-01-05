@@ -7,6 +7,8 @@
 #include "kernel/cuda/swiglu.cuh"
 #include "kernel/cuda/rope_kernel.cuh"
 #include "kernel/kernels_interface.h"
+#include "kernel/flashInfer/single_decode_with_kv_cache.cuh"
+#include <cuda_bf16.h>
 
 namespace f32x4_kernel_cu
 {
@@ -58,4 +60,10 @@ namespace bf16_kernel_cu
     RoPEKernel get_rope_kernel() { return rope_kernel_cu; }
 
     Swiglu get_swiglu_kernel() { return swiglu_kernel_cu; }
+}
+
+namespace flashinfer
+{
+
+    SingleDecodeWithKVCache get_single_decode_with_kv_cache_kernel(){return  single_decode_with_kv_cache;}
 }

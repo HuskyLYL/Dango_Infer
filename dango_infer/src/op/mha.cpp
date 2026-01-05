@@ -1,5 +1,4 @@
 #include "op/mha.h"
-#include "kernel/flashInfer/single_decode_with_kv_cache.cuh"
 #include "kernel/kernels_interface.h"
 namespace op 
 {
