@@ -1,5 +1,6 @@
 #include <cstdint>
 #include<flashInfer/pos_enc.cuh>
+#include<flashInfer/decode.cuh>
 #include<flashInfer/vec_dtypes.cuh>
 #include<flashInfer/cp_async.cuh>
 #include<flashInfer/utils.cuh>
