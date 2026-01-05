@@ -291,7 +291,7 @@ namespace flashinfer
     cudaError_t SingleDecodeWithKVCacheDispatched(uint32_t head_dim,cudaStream_t stream,
         const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len,
         const T* q,const T* k,const T* v ,T* o,
-        const uint32_t q_stride_n, const uint32_t q_stride_h, const uint32_t kv_stride_n,const uint32_t kv_stride_h 
+        const uint32_t q_stride_n, const uint32_t q_stride_h, const uint32_t kv_stride_n,const uint32_t kv_stride_h ,uint32_t kv_chunk_size
 
     
     ) 

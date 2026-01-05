@@ -44,7 +44,7 @@ namespace flashinfer
                 status = SingleDecodeWithKVCacheDispatched<float>(head_size,stream,
                     num_qo_heads,num_kv_heads ,kv_len,
                     q,k,v,o,
-                    q_stride_n,q_stride_h,kv_stride_n,kv_stride_h 
+                    q_stride_n,q_stride_h,kv_stride_n,kv_stride_h,kv_chunk_size
                 );
                 break;
             }
@@ -58,7 +58,7 @@ namespace flashinfer
                 status = SingleDecodeWithKVCacheDispatched<__nv_bfloat16>(head_size,stream,
                     num_qo_heads,num_kv_heads ,kv_len,
                     q,k,v,o,
-                    q_stride_n,q_stride_h,kv_stride_n,kv_stride_h 
+                    q_stride_n,q_stride_h,kv_stride_n,kv_stride_h ,kv_chunk_size
                 );
 
                 break;
