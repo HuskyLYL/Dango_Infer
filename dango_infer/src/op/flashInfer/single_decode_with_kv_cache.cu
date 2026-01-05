@@ -152,7 +152,7 @@ namespace flashinfer
 
     template <typename T>
     cudaError_t SingleDecodeWithKVCacheDispatched(uint32_t head_dim,cudaStream_t stream,
-        const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len,
+        const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len
 
     
     ) 

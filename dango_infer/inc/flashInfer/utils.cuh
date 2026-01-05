@@ -1,5 +1,8 @@
 #ifndef FLASHINFER_UTILS_CUH_
 #define FLASHINFER_UTILS_CUH_
+#include <cuda_runtime.h>   // cudaGetDevice, cudaDeviceGetAttribute, cudaDevAttr...
+#include <utility>          // std::pair, std::make_pair
+#include <cstdint>    
 #define DISPATCH_GQA_GROUP_SIZE(group_size, GROUP_SIZE, ...) \
   if (group_size == 1) {                                     \
     constexpr size_t GROUP_SIZE = 1;                         \
@@ -39,5 +42,20 @@ namespace flashinfer
   {
     return (x + y - 1) / y;
   }
+
+
+  inline std::pair<int, int> GetCudaComputeCapability() 
+  {
+    int device_id = 0;
+    cudaGetDevice(&device_id);
+    int major = 0, minor = 0;
+    cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device_id);
+    cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device_id);
+    return std::make_pair(major, minor);
+  }
+
+
+
+
 
 }
