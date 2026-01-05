@@ -1,4 +1,5 @@
 #include<flashInfer/vec_dtypes.cuh>
+#include<flashInfer/state.cuh>
 
 namespace flashinfer
 {
