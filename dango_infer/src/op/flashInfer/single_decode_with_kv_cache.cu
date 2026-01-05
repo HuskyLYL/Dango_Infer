@@ -138,8 +138,11 @@ namespace flashinfer
         #pragma unroll
         for (size_t i = 0; i < vec_size; ++i) 
         {
-            st_local.o[i] = variant.OutputTransform(params, st_local.o[i], /*batch_idx=*/0, /*qo_idx=*/0,
-                                                    qo_head_idx, st_local.m, st_local.d, /*scale=*/1.0f);
+            float d_rcp = (st_local.m != -math::inf) ? math::ptx_rcp(st_local.d) : 0.f;
+            //return output * d_rcp;
+            st_local.o[i] = st_local.o[i]*d_rcp;
+            //variant.OutputTransform(params, st_local.o[i], /*batch_idx=*/0, /*qo_idx=*/0,
+            //                                        qo_head_idx, st_local.m, st_local.d, /*scale=*/1.0f);
         }
 
         st_local.o.cast_store(o + (kv_chunk_idx * num_qo_heads + qo_head_idx) * head_dim + tx * vec_size);
