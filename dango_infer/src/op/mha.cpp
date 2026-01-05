@@ -135,7 +135,7 @@ namespace op
                 key_cache_tensor, value_cache_tensor, stream);
         else if (data_type == base::DataType::kDataTypeBf16)
         {
-            flashinfer::single_decode_with_kv_cache(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
+            flashinfer::single_decode_with_kv_cache<__nv_bfloat16>(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
                 head_size_, mha_out, query_tensor, score_tensor,
                 key_cache_tensor, value_cache_tensor, stream);
         }
