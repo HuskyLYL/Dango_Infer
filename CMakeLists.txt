@@ -32,7 +32,7 @@ aux_source_directory(dango_infer/src/model/ DIR_MODEL)
 aux_source_directory(dango_infer/src/op/ DIR_OP)
 aux_source_directory(dango_infer/src/kernel/ DIR_KERNEL)
 aux_source_directory(dango_infer/src/op/cuda DIR_CUDA)
-aux_source_directory(dango_infer/src/op/flashInfer DIR_flashInfer)
+
 aux_source_directory(dango_infer/src/sampler DIR_SAMPLER)
 
 
