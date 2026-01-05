@@ -67,8 +67,8 @@ namespace flashinfer
 
             const uint32_t pos = kv_idx_base + tz * tile_size + j;
 
-    
-            s[j] *= variant.sm_scale_log2;
+            const float sm_scale_log2 = math::log2e / sqrtf(static_cast<float>(bdx * vec_size));
+            s[j] *= sm_scale_log2;
 
             bool mask = true;
 
