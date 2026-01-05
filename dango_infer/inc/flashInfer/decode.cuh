@@ -4,7 +4,7 @@ namespace flashinfer
 {
 
     template<uint32_t vec_size>
-    __device__ __forceinline__ void sync_state(state_t<vec_size>& st, float* smem, float* smem_md,
+    __device__ __inline__ void sync_state(state_t<vec_size>& st, float* smem, float* smem_md,
                                                const uint32_t tx, const uint32_t ty, const uint32_t tz,
                                                 uint32_t bdx, uint32_t bdy, uint32_t bdz) 
     {
