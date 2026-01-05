@@ -11,9 +11,6 @@
 namespace flashinfer
 {
 
-
-
-
     template <typename T, uint32_t num_stages_smem,uint32_t vec_size>
     __global__ void SingleDecodeWithKVCacheKernel(
         const T* q, const T* k, const T* v, T* o, const uint32_t q_stride_n, const uint32_t q_stride_h,
