@@ -36,13 +36,10 @@ namespace flashinfer
         switch (query_tensor.data_type())
         {
             case base::DataType::kDataTypeFp32: 
-
+            {
                 const float* q = query_tensor.ptr<float>();
-     
                 const float* k = key_cache_tensor.ptr<float>(layer_index * seq_len * kv_dim);
-     
                 const float* v = value_cache_tensor.ptr<float>(layer_index * seq_len * kv_dim);
-            
                 const float* o = mha_out.ptr<float>();
                 status = SingleDecodeWithKVCacheDispatched<float>(head_size,stream,
                     num_qo_heads,num_kv_heads ,kv_len,
@@ -50,29 +47,30 @@ namespace flashinfer
                     q_stride_n,q_stride_h,kv_stride_n,kv_stride_h 
                 );
                 break;
+            }
 
             case base::DataType::kDataTypeBf16: 
-
+            {
                 const __nv_bfloat16* q = query_tensor.ptr<__nv_bfloat16>();
-     
                 const __nv_bfloat16* k = key_cache_tensor.ptr<__nv_bfloat16>(layer_index * seq_len * kv_dim);
-     
                 const __nv_bfloat16* v = value_cache_tensor.ptr<__nv_bfloat16>(layer_index * seq_len * kv_dim);
-            
                 const __nv_bfloat16* o = mha_out.ptr<__nv_bfloat16>();
-                status = SingleDecodeWithKVCacheDispatched<float>(head_size,stream,
+                status = SingleDecodeWithKVCacheDispatched<__nv_bfloat16>(head_size,stream,
                     num_qo_heads,num_kv_heads ,kv_len,
                     q,k,v,o,
                     q_stride_n,q_stride_h,kv_stride_n,kv_stride_h 
                 );
 
                 break;
+            }
         
             default:
+            {
                 LOG(ERROR) << "single_decode_with_kv_cache: unsupported data type "
                            << static_cast<int>(query_tensor.data_type());
                 status = cudaErrorInvalidValue;
                 break;
+            }
         }
 
      
