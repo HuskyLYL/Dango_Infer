@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <glog/logging.h>
 #include<base/base.h>
+#include<tensor/tensor.h>
 
 
 namespace flashinfer
