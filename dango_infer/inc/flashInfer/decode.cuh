@@ -4,6 +4,31 @@
 namespace flashinfer
 {
 
+
+    template <uint32_t vec_size, typename T>
+    __device__ __inline__ void update_local_state(const T* smem, const float* s,
+                                                   uint32_t compute_stage_idx,
+                                                   state_t<vec_size>& st, uint32_t tx,uint32_t bdx, uint32_t tile_size) 
+    {
+        #pragma unroll
+        for (uint32_t j = 0; j < tile_size; ++j) 
+        {
+            vec_t<float, vec_size> v_vec;
+            v_vec.cast_load(smem + (j * bdx + tx) * vec_size);
+            #pragma unroll
+            for (uint32_t i = 0; i < vec_size; ++i) 
+            {
+                st.o[i] = st.o[i] + s[j] * v_vec[i];
+            }
+        }
+    }
+
+
+
+
+
+
+
     template<uint32_t vec_size>
     __device__ __inline__ void sync_state(state_t<vec_size>& st, float* smem, float* smem_md,
                                                const uint32_t tx, const uint32_t ty, const uint32_t tz,
@@ -96,7 +121,7 @@ namespace flashinfer
     }
 
 
-    const uint32_t get_heuristic_num_threads(uint32_t group_size, uint32_t sizeof_dtype) 
+    uint32_t get_heuristic_num_threads(uint32_t group_size, uint32_t sizeof_dtype) 
     {
         if (group_size == 8U) 
             if (sizeof_dtype == 1U) 

@@ -109,9 +109,9 @@ namespace flashinfer
             // update m/d/o state
             cp_async::wait_group<2 * num_stages_smem - 1>();
             __syncthreads();
-            update_local_state<vec_size, bdx, bdy * tile_size_per_bdx>(
+            update_local_state<vec_size>(
                 v_smem + (stage_idx * bdz + tz) * bdy * tile_size_per_bdx * head_dim, s, stage_idx,
-                st_local, tx);
+                st_local, tx,bdx, bdy * tile_size_per_bdx);
             __syncthreads();
 
             // load v
