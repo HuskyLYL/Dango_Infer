@@ -240,7 +240,7 @@ namespace flashinfer
 
         uint32_t kv_chunk_size = 0;
 
-        cudaError_t status = SingleDecodeWithKVCacheDispatched<T>(head_dim,stream,
+        cudaError_t status = SingleDecodeWithKVCacheDispatched<T>(head_size,stream,
             num_qo_heads,num_kv_heads ,kv_len,
             q,k,v,o,
             q_stride_n,q_stride_h,kv_stride_n,kv_stride_h 
