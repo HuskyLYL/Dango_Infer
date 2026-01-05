@@ -152,8 +152,8 @@ namespace flashinfer
 
     template <typename T>
     cudaError_t SingleDecodeWithKVCacheDispatched(uint32_t head_dim,cudaStream_t stream,
-        const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len
-
+        const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len,
+        const T* q
     
     ) 
     {
@@ -238,8 +238,14 @@ namespace flashinfer
 
         uint32_t kv_chunk_size = 0;
 
-        cudaError_t status = flashinfer::SingleDecodeWithKVCacheDispatched<HEAD_DIM_QK, POS_ENCODING_MODE,AttentionVariant>(params, static_cast<DTypeO*>(tmp.data_ptr()), stream);
+        cudaError_t status = SingleDecodeWithKVCacheDispatched<T>(uint32_t head_dim,cudaStream_t stream,
+            const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len,
+            q
+        );
         
+
+
+
 
         CHECK(status == cudaSuccess);
 
