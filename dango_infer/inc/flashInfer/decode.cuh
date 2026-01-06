@@ -155,14 +155,24 @@ namespace flashinfer
         uint32_t num_qo_heads, uint32_t kv_chunk_size, uint32_t tile_size_per_bdx, 
         uint32_t bdx, uint32_t bdy, uint32_t bdz) 
     {
+
+        // bdx * vec_size = head_dim
+        // bdy 代表了处理一个KV head 对应的 q head
+        // bdz  代表了处理一个q head 和 v head 有多少个线程可以参与进来
         uint32_t head_dim = bdx * vec_size;
+
+
         uint32_t kv_head_idx = blockIdx.y;
         uint32_t qo_head_idx = kv_head_idx * bdy + threadIdx.y;
+
+        //一个chunk 只处理 一个 vec_size 的成员
         uint32_t kv_chunk_idx = blockIdx.x;
 
         extern __shared__ uint8_t smem[];
         const uint32_t seq_len = kv_len;
         T* k_smem = (T*)smem;
+
+
         T* v_smem =
             (T*)(smem + num_stages_smem * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T));
         float* smem_md =
@@ -292,8 +302,6 @@ namespace flashinfer
         const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len,
         const T* q,const T* k,const T* v ,T* o,
         const uint32_t q_stride_n, const uint32_t q_stride_h, const uint32_t kv_stride_n,const uint32_t kv_stride_h ,uint32_t kv_chunk_size
-
-    
     ) 
     {
 
@@ -308,10 +316,15 @@ namespace flashinfer
         const uint32_t group_size = num_qo_heads / num_kv_heads;
 
         const uint32_t bdy = group_size;
+
+        //这里取的是线程数目
         const uint32_t num_threads = std::max(get_heuristic_num_threads(group_size, sizeof(T)), bdx * bdy);
 
         const uint32_t bdz = num_threads / (bdx * bdy);
         const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+
+
+        kv_chunk_size = seq_len;
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
@@ -319,7 +332,7 @@ namespace flashinfer
 
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
-            //uint32_t kv_chunk_size = seq_len;
+            
 
             if(stream)
             

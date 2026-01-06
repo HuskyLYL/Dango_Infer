@@ -31,8 +31,8 @@ namespace flashinfer
         cudaError_t status;
         
 
-    
-    
+        
+        
         switch (query_tensor.data_type())
         {
             case base::DataType::kDataTypeFp32: 
