@@ -155,10 +155,17 @@ namespace flashinfer
         uint32_t num_qo_heads, uint32_t kv_chunk_size, uint32_t tile_size_per_bdx, 
         uint32_t bdx, uint32_t bdy, uint32_t bdz) 
     {
-
+        // 一个block 处理一个 KV 头 和其对应的多个 Query的头
         // bdx * vec_size = head_dim
         // bdy 代表了处理一个KV head 对应的 q head
         // bdz  代表了处理一个q head 和 v head 有多少个线程可以参与进来
+
+
+
+
+
+
+
         uint32_t head_dim = bdx * vec_size;
 
 
@@ -175,6 +182,7 @@ namespace flashinfer
 
         T* v_smem =
             (T*)(smem + num_stages_smem * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T));
+        //这里是计算的中间变量的存放初，专门用来计算 m 和 d的
         float* smem_md =
             (float*)(smem +
                      2 * num_stages_smem * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T));
@@ -184,22 +192,35 @@ namespace flashinfer
         vec_t<float, vec_size> freq;
 
         //装载我们的Q了
+        //q是早早的要装载好的
         q_vec.cast_load(q + qo_head_idx * q_stride_h + tx * vec_size);
 
         __syncthreads();
 
         uint32_t chunk_start = kv_chunk_idx * kv_chunk_size;
+
+        //chunk在这里和seq_len行对应
+        //不过我们在这里是一次加载所有的kv行了
         kv_chunk_size = min(kv_chunk_size, seq_len - chunk_start);
         uint32_t chunk_end = chunk_start + kv_chunk_size;
 
         // preload k tiles and v tiles
+
+
+        // Q只有一个，但是对应了KV 可能有多个呀
         uint32_t producer_kv_idx_base = chunk_start;
+        //这里是比特数目
         constexpr uint32_t vec_bits = sizeof(T) * vec_size * 8;
+
+        //一般开始都是先加载资源
+        //我现在怀疑这里的资源能不能加载完成了
+        //这里先加载一次product
         #pragma unroll
         for (uint32_t iter = 0; iter < num_stages_smem; ++iter) 
         {
             for (uint32_t j = 0; j < tile_size_per_bdx; ++j) 
             {
+                //前一个是写入的位置
                 cp_async::pred_load<vec_bits, cp_async::PrefetchMode::kPrefetch, cp_async::SharedMemFillMode::kNoFill>(
                     k_smem + (((iter * bdz + tz) * bdy + ty) * tile_size_per_bdx + j) * head_dim +
                         tx * vec_size,
@@ -218,11 +239,16 @@ namespace flashinfer
                     producer_kv_idx_base + (tz * bdy + ty) * tile_size_per_bdx + j < chunk_end);
             }
             cp_async::commit_group();
+            //这里是seq的行起始偏移
             producer_kv_idx_base += bdy * bdz * tile_size_per_bdx;
         }
 
         // pipelining k/v tiles loading and state updating
+        //这里的是消费者现在算到了第几行，后面是n解读啊
         uint32_t consumer_kv_idx_base = chunk_start, stage_idx = 0;
+        //当前vec的最大值
+        //累积和
+        //与归一化的加权乘
         state_t<vec_size> st_local;
         //float s[bdy * tile_size_per_bdx];
 
@@ -232,6 +258,7 @@ namespace flashinfer
         for (uint32_t iter = 0; iter < ceil_div(kv_chunk_size, tile_size_per_bdx * bdy * bdz); ++iter) 
         {
             // compute qk
+            //等待拷贝完毕
             cp_async::wait_group<2 * num_stages_smem - 1>();
             __syncthreads();
             compute_qk<vec_size, T>(
@@ -292,6 +319,7 @@ namespace flashinfer
             //                                        qo_head_idx, st_local.m, st_local.d, /*scale=*/1.0f);
         }
 
+        //最后的结果是都放在o里面了
         st_local.o.cast_store(o + (kv_chunk_idx * num_qo_heads + qo_head_idx) * head_dim + tx * vec_size);
 
     }
@@ -321,6 +349,8 @@ namespace flashinfer
         const uint32_t num_threads = std::max(get_heuristic_num_threads(group_size, sizeof(T)), bdx * bdy);
 
         const uint32_t bdz = num_threads / (bdx * bdy);
+
+        //一个加载的K碎片存放多少的元素
         const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
 
 
