@@ -542,15 +542,18 @@ namespace model
     std::dynamic_pointer_cast<op::MultiHeadAttention>(mha_layer)->set_pos(pos);
     std::dynamic_pointer_cast<op::MultiHeadAttention>(mha_layer)->set_layer_idx(layer_idx);
     STATUS_CHECK(mha_layer->forward(query, score_storage, key_cache, val_cache, mha_output));
-
     if(base::g_enable_debug_log)
-      attn_output.print("attn_output:");
+      mha_output.print("mha_output:");
+
+
 
     // wo @ attention output
     tensor::Tensor attn_output = get_buffer(ModelBufferType::kAttnOutput);
     const auto& wo_layer = llama_layers_->wo_layers_.at(layer_idx);
     CHECK_NE(wo_layer, nullptr) << "The weight output layer is null pointer.";
     STATUS_CHECK(wo_layer->forward(mha_output, attn_output));
+    if(base::g_enable_debug_log)
+      attn_output.print("attn_output:");
 
   }
 
