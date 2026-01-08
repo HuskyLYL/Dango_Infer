@@ -25,7 +25,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     pos_tensor.index<int32_t>(0) = pos;
     if (pos < prompt_len - 1) 
     {
-      base::g_enable_debug_log = true;
+      base::g_enable_debug_log = false;
       tensor::Tensor input = model.fill_input(pos_tensor, prompt_embedding, is_prompt);
       model.predict(input, pos_tensor, is_prompt, next);
     } 
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");
     fflush(stdout);
-    int steps = generate(model, sentence, 1, true);
+    int steps = generate(model, sentence, 1024, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
