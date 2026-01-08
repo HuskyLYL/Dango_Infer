@@ -374,8 +374,8 @@ namespace flashinfer
 
         const uint32_t bdz = num_threads / (bdx * bdy);
 
-        //固定 tile_size，避免单头场景共享内存过大
-        const uint32_t tile_size_per_bdx = 1U;
+        // 单头时加载更多元素以提升吞吐
+        const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
 
 
         kv_chunk_size = seq_len;
@@ -390,7 +390,7 @@ namespace flashinfer
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
 
-            if (!logged)
+            if (g_enable_debug_log)
             {
                 int max_smem = 0;
                 cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
@@ -409,9 +409,22 @@ namespace flashinfer
                 logged = true;
             }
 
-            if (smeme_size > 0 && smeme_size > 48 * 1024)
+            // opt-in 动态共享内存上限
+            int max_smem = 0;
+            cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
+            auto func_attr_status =
+                cudaFuncSetAttribute(SingleDecodeWithKVCacheKernel<T, NUM_STAGES_SMEM, vec_size>,
+                                     cudaFuncAttributeMaxDynamicSharedMemorySize, smeme_size);
+            if (func_attr_status != cudaSuccess)
             {
-                LOG(ERROR) << "SingleDecodeWithKVCacheKernel shared memory too large: " << smeme_size;
+                LOG(ERROR) << "cudaFuncSetAttribute failed: "
+                           << cudaGetErrorString(func_attr_status) << " (" << static_cast<int>(func_attr_status) << ")";
+                launch_status = func_attr_status;
+            }
+            else if (smeme_size > static_cast<uint32_t>(max_smem))
+            {
+                LOG(ERROR) << "SingleDecodeWithKVCacheKernel shared memory too large: " << smeme_size
+                           << " limit=" << max_smem;
                 launch_status = cudaErrorInvalidValue;
             }
             else
