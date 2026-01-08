@@ -359,7 +359,7 @@ namespace flashinfer
     {
 
 
-        const uint32_t seq_len = kv_len;
+        //const uint32_t seq_len = kv_len;
 
         constexpr uint32_t vec_size = 16UL / sizeof(T);
         const uint32_t bdx = head_dim/ vec_size;
@@ -417,7 +417,7 @@ namespace flashinfer
             int max_smem = 0;
             cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
             auto func_attr_status =
-                cudaFuncSetAttribute(SingleDecodeWithKVCacheKernel<T, NUM_STAGES_SMEM, vec_size>,
+                cudaFuncSetAttribute(SingleDecodeWithKVCacheKernel<T, NUM_STAGES_SMEM, vec_size,tile_size_per_bdx,bdy>,
                                      cudaFuncAttributeMaxDynamicSharedMemorySize, smeme_size);
             if (func_attr_status != cudaSuccess)
             {
