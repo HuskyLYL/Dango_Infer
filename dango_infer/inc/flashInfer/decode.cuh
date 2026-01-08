@@ -361,7 +361,7 @@ namespace flashinfer
 
         //const uint32_t seq_len = kv_len;
 
-        constexpr uint32_t vec_size = 32UL / sizeof(T);
+        constexpr uint32_t vec_size = 8UL / sizeof(T);
         const uint32_t bdx = head_dim/ vec_size;
         auto compute_capacity = GetCudaComputeCapability();
         //一个head_dim 要做归约操作，不能让他的值大于32了
