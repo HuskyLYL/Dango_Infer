@@ -331,6 +331,7 @@ namespace flashinfer
         __syncthreads();
 
         // sync local state of all warps inside a threadblock
+        // 思路是正确的，但是速度上不去呀
         sync_state<vec_size>(st_local, reinterpret_cast<float*>(smem), smem_md, tx, ty, tz, bdx, bdy, bdz);
         #pragma unroll
         for (size_t i = 0; i < vec_size; ++i) 
@@ -390,7 +391,7 @@ namespace flashinfer
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
 
-            LOG(INFO)<<"NUM_STAGES_SMEM:"<<NUM_STAGES_SMEM;
+            
             const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float);
 
             dim3 nblks = dim3(1, num_kv_heads);

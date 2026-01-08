@@ -23,6 +23,9 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
 
   while (pos < total_steps) 
   {
+
+    auto start = std::chrono::steady_clock::now();
+
     pos_tensor.index<int32_t>(0) = pos;
     if (pos < prompt_len - 1) 
     {
@@ -54,6 +57,10 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     {
       words.push_back(next);
     }
+
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration<double>(end - start).count();
+    LOG(INFO)<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
 
     pos += 1;
   }
