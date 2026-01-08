@@ -389,7 +389,7 @@ namespace flashinfer
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
-            const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float)+bdy * tile_size_per_bdx*sizeof(float);
+            const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float);
 
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
