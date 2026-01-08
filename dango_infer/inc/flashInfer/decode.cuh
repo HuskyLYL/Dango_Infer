@@ -381,7 +381,7 @@ namespace flashinfer
         kv_chunk_size = seq_len;
 
         cudaError_t launch_status = cudaSuccess;
-        static bool logged = false;
+        //static bool logged = false;
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
@@ -390,24 +390,24 @@ namespace flashinfer
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
 
-            if (g_enable_debug_log)
-            {
-                int max_smem = 0;
-                cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
+            // if (base::g_enable_debug_log)
+            // {
+            //     int max_smem = 0;
+            //     cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
 
-                LOG(INFO) << "SingleDecodeWithKVCacheKernel launch: "
-                          << "head_dim=" << head_dim
-                          << " num_qo_heads=" << num_qo_heads
-                          << " num_kv_heads=" << num_kv_heads
-                          << " kv_len=" << kv_len
-                          << " bdx=" << bdx << " bdy=" << bdy << " bdz=" << bdz
-                          << " tile_size_per_bdx=" << tile_size_per_bdx
-                          << " smem=" << smeme_size
-                          << " smem_limit=" << max_smem
-                          << " nblks=(" << nblks.x << "," << nblks.y << "," << nblks.z << ")"
-                          << " nthrs=(" << nthrs.x << "," << nthrs.y << "," << nthrs.z << ")";
-                logged = true;
-            }
+            //     LOG(INFO) << "SingleDecodeWithKVCacheKernel launch: "
+            //               << "head_dim=" << head_dim
+            //               << " num_qo_heads=" << num_qo_heads
+            //               << " num_kv_heads=" << num_kv_heads
+            //               << " kv_len=" << kv_len
+            //               << " bdx=" << bdx << " bdy=" << bdy << " bdz=" << bdz
+            //               << " tile_size_per_bdx=" << tile_size_per_bdx
+            //               << " smem=" << smeme_size
+            //               << " smem_limit=" << max_smem
+            //               << " nblks=(" << nblks.x << "," << nblks.y << "," << nblks.z << ")"
+            //               << " nthrs=(" << nthrs.x << "," << nthrs.y << "," << nthrs.z << ")";
+            //     logged = true;
+            // }
 
             // opt-in 动态共享内存上限
             int max_smem = 0;
