@@ -378,7 +378,8 @@ namespace flashinfer
         const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
 
 
-        kv_chunk_size = seq_len;
+        // 只处理已写入的 KV 长度，避免访问未初始化的 cache
+        kv_chunk_size = kv_len;
 
         cudaError_t launch_status = cudaSuccess;
         //static bool logged = false;
