@@ -144,7 +144,7 @@ namespace op
 
             //bf16x8_kernel_cu::get_mha_kernel()(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
             //    head_size_, mha_out, query_tensor, score_tensor,
-            /    key_cache_tensor, value_cache_tensor, stream);
+            //    key_cache_tensor, value_cache_tensor, stream);
 
 
         }
