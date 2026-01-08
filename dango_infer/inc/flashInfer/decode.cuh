@@ -374,8 +374,8 @@ namespace flashinfer
 
         const uint32_t bdz = num_threads / (bdx * bdy);
 
-        //一个加载的K碎片存放多少的元素
-        const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+        //固定 tile_size，避免单头场景共享内存过大
+        const uint32_t tile_size_per_bdx = 1U;
 
 
         kv_chunk_size = seq_len;
@@ -392,6 +392,9 @@ namespace flashinfer
 
             if (!logged)
             {
+                int max_smem = 0;
+                cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
+
                 LOG(INFO) << "SingleDecodeWithKVCacheKernel launch: "
                           << "head_dim=" << head_dim
                           << " num_qo_heads=" << num_qo_heads
@@ -400,9 +403,17 @@ namespace flashinfer
                           << " bdx=" << bdx << " bdy=" << bdy << " bdz=" << bdz
                           << " tile_size_per_bdx=" << tile_size_per_bdx
                           << " smem=" << smeme_size
+                          << " smem_limit=" << max_smem
                           << " nblks=(" << nblks.x << "," << nblks.y << "," << nblks.z << ")"
                           << " nthrs=(" << nthrs.x << "," << nthrs.y << "," << nthrs.z << ")";
                 logged = true;
+            }
+
+            if (smeme_size > 0 && smeme_size > 48 * 1024)
+            {
+                LOG(ERROR) << "SingleDecodeWithKVCacheKernel shared memory too large: " << smeme_size;
+                launch_status = cudaErrorInvalidValue;
+                return;
             }
 
             if(stream)
