@@ -163,12 +163,12 @@ namespace flashinfer
     }
 
 
-    template <typename T, uint32_t num_stages_smem,uint32_t vec_size>
+    template <typename T, uint32_t num_stages_smem,uint32_t vec_size,uint32_t tile_size_per_bdx, uint32_t bdy>
     __global__ void SingleDecodeWithKVCacheKernel(
         const T* q, const T* k, const T* v, T* o, const uint32_t q_stride_n, const uint32_t q_stride_h,
         const uint32_t kv_stride_n, const uint32_t kv_stride_h, const uint32_t kv_len,
-        uint32_t num_qo_heads, uint32_t kv_chunk_size, uint32_t tile_size_per_bdx, 
-        uint32_t bdx, uint32_t bdy, uint32_t bdz) 
+        uint32_t num_qo_heads, uint32_t kv_chunk_size,  
+        uint32_t bdx, uint32_t bdz) 
     {
         // 一个block 处理一个 KV 头 和其对应的多个 Query的头
         // bdx * vec_size = head_dim
@@ -266,9 +266,11 @@ namespace flashinfer
         //累积和
         //与归一化的加权乘
         state_t<vec_size> st_local;
-        //float s[bdy * tile_size_per_bdx];
+        float s[bdy * tile_size_per_bdx];
 
-        float* s = reinterpret_cast<float*>(smem_md + 2* bdy * bdz );
+        //float* s = reinterpret_cast<float*>(smem_md + 2* bdy * bdz );
+        //float* s = reinterpret_cast<float*>(smem_md + 2 * bdy * bdz) +
+        //    (tz * bdy + ty) * bdy * tile_size_per_bdx;
 
         //这里的ceil_div 是向上整除
         #pragma unroll 2
@@ -348,7 +350,7 @@ namespace flashinfer
     }
 
 
-    template <typename T>
+    template <typename T,uint32_t group_size>
     cudaError_t SingleDecodeWithKVCacheDispatched(uint32_t head_dim,cudaStream_t stream,
         const uint32_t num_qo_heads,const uint32_t num_kv_heads ,const  uint32_t  kv_len,
         const T* q,const T* k,const T* v ,T* o,
@@ -365,9 +367,9 @@ namespace flashinfer
         //一个head_dim 要做归约操作，不能让他的值大于32了
         CHECK(bdx <= 32U);
 
-        const uint32_t group_size = num_qo_heads / num_kv_heads;
+        //const uint32_t group_size = num_qo_heads / num_kv_heads;
 
-        const uint32_t bdy = group_size;
+        constexpr uint32_t bdy = group_size;
 
         //这里取的是线程数目
         const uint32_t num_threads = std::max(get_heuristic_num_threads(group_size, sizeof(T)), bdx * bdy);
@@ -375,7 +377,8 @@ namespace flashinfer
         const uint32_t bdz = num_threads / (bdx * bdy);
 
         // 单头时加载更多元素以提升吞吐
-        const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+        //const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+        constexpr uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
 
 
         // 只处理已写入的 KV 长度，避免访问未初始化的 cache
@@ -432,18 +435,18 @@ namespace flashinfer
             {
                 if(stream)
                 
-                    SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size><<<nblks,nthrs,smeme_size,stream>>>(
+                    SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size,tile_size_per_bdx,bdy><<<nblks,nthrs,smeme_size,stream>>>(
                         q, k, v, o, q_stride_n, q_stride_h,
                         kv_stride_n, kv_stride_h, kv_len,
-                        num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
-                        bdx,  bdy, bdz); 
+                        num_qo_heads, kv_chunk_size,  
+                        bdx,   bdz); 
                 else
                 
-                    SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size><<<nblks,nthrs,smeme_size>>>(
+                    SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size,tile_size_per_bdx,bdy><<<nblks,nthrs,smeme_size>>>(
                         q, k, v, o, q_stride_n, q_stride_h,
                         kv_stride_n, kv_stride_h, kv_len,
-                        num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
-                        bdx,  bdy, bdz); 
+                        num_qo_heads, kv_chunk_size, 
+                        bdx,   bdz); 
 
                 launch_status = cudaGetLastError();
             }

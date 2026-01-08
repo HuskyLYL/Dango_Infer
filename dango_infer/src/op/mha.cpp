@@ -137,6 +137,7 @@ namespace op
             //好了,这里集成进来了
 
             LOG(INFO) << "into_single_decode_with_kv_cache_kernel.";
+            CHECK(kv_mul_ == 1);
             flashinfer::get_single_decode_with_kv_cache_kernel()(pos_, head_num_, layer_index_, seq_len_, kv_dim_, kv_mul_,
                 head_size_, mha_out, query_tensor, score_tensor,
                 key_cache_tensor, value_cache_tensor, stream);
