@@ -381,6 +381,7 @@ namespace flashinfer
         kv_chunk_size = seq_len;
 
         cudaError_t launch_status = cudaSuccess;
+        static bool logged = false;
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
@@ -389,9 +390,20 @@ namespace flashinfer
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
 
-            //开始怀疑内核没有启动成功
-
-            
+            if (!logged)
+            {
+                LOG(INFO) << "SingleDecodeWithKVCacheKernel launch: "
+                          << "head_dim=" << head_dim
+                          << " num_qo_heads=" << num_qo_heads
+                          << " num_kv_heads=" << num_kv_heads
+                          << " kv_len=" << kv_len
+                          << " bdx=" << bdx << " bdy=" << bdy << " bdz=" << bdz
+                          << " tile_size_per_bdx=" << tile_size_per_bdx
+                          << " smem=" << smeme_size
+                          << " nblks=(" << nblks.x << "," << nblks.y << "," << nblks.z << ")"
+                          << " nthrs=(" << nthrs.x << "," << nthrs.y << "," << nthrs.z << ")";
+                logged = true;
+            }
 
             if(stream)
             
