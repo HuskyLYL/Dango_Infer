@@ -1,6 +1,7 @@
 #include<kernel/flashInfer/single_decode_with_kv_cache.cuh>
 #include<flashInfer/decode.cuh>
 #include <cuda_bf16.h>
+#include <cuda_runtime.h>
 #include <glog/logging.h>
 namespace flashinfer
 {
@@ -75,6 +76,11 @@ namespace flashinfer
 
      
         
+        if (status != cudaSuccess)
+        {
+            LOG(ERROR) << "single_decode_with_kv_cache kernel launch failed: "
+                       << cudaGetErrorString(status) << " (" << static_cast<int>(status) << ")";
+        }
         CHECK(status == cudaSuccess);   
     }
 }
