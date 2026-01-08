@@ -5,7 +5,7 @@
 # Prerequisites
 *.d
 
-*.slurm
+#*.slurm
 
 # Compiled Object files
 *.slo

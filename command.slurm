@@ -11,8 +11,8 @@ spack load glog
 spack load sentencepiece
 spack load googletest
 spack load armadillo
-rm -r build
-mkdir build
+#rm -r build
+#mkdir build
 cd build
 cmake ..
 make
