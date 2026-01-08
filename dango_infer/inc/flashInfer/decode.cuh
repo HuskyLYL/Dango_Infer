@@ -119,7 +119,7 @@ namespace flashinfer
             for (uint32_t offset = bdx / 2; offset > 0; offset /= 2) 
                 s[j] += math::shfl_xor_sync(s[j], offset);
 
-            const uint32_t pos = kv_idx_base + tz * tile_size + j;
+            //const uint32_t pos = kv_idx_base + tz * tile_size + j;
 
             const float sm_scale_log2 = math::log2e / sqrtf(static_cast<float>(bdx * vec_size));
             s[j] *= sm_scale_log2;
@@ -413,25 +413,26 @@ namespace flashinfer
             {
                 LOG(ERROR) << "SingleDecodeWithKVCacheKernel shared memory too large: " << smeme_size;
                 launch_status = cudaErrorInvalidValue;
-                return;
             }
-
-            if(stream)
-            
-                SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size><<<nblks,nthrs,smeme_size,stream>>>(
-                    q, k, v, o, q_stride_n, q_stride_h,
-                    kv_stride_n, kv_stride_h, kv_len,
-                    num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
-                    bdx,  bdy, bdz); 
             else
-            
-                SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size><<<nblks,nthrs,smeme_size>>>(
-                    q, k, v, o, q_stride_n, q_stride_h,
-                    kv_stride_n, kv_stride_h, kv_len,
-                    num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
-                    bdx,  bdy, bdz); 
+            {
+                if(stream)
+                
+                    SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size><<<nblks,nthrs,smeme_size,stream>>>(
+                        q, k, v, o, q_stride_n, q_stride_h,
+                        kv_stride_n, kv_stride_h, kv_len,
+                        num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
+                        bdx,  bdy, bdz); 
+                else
+                
+                    SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size><<<nblks,nthrs,smeme_size>>>(
+                        q, k, v, o, q_stride_n, q_stride_h,
+                        kv_stride_n, kv_stride_h, kv_len,
+                        num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
+                        bdx,  bdy, bdz); 
 
-            launch_status = cudaGetLastError();
+                launch_status = cudaGetLastError();
+            }
             
 
                 
