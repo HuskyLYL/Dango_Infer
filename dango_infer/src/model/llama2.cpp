@@ -541,6 +541,9 @@ namespace model
     //智能指针的安全转换类型
     std::dynamic_pointer_cast<op::MultiHeadAttention>(mha_layer)->set_pos(pos);
     std::dynamic_pointer_cast<op::MultiHeadAttention>(mha_layer)->set_layer_idx(layer_idx);
+
+    if(base::g_enable_debug_log)
+      query.print("query:");
     STATUS_CHECK(mha_layer->forward(query, score_storage, key_cache, val_cache, mha_output));
     if(base::g_enable_debug_log)
       mha_output.print("mha_output:");
