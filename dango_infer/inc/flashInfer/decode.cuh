@@ -380,12 +380,17 @@ namespace flashinfer
 
         kv_chunk_size = seq_len;
 
+        cudaError_t launch_status = cudaSuccess;
+
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
             const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float)+bdy * tile_size_per_bdx*sizeof(float);
 
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
+
+            //开始怀疑内核没有启动成功
+
             
 
             if(stream)
@@ -402,13 +407,14 @@ namespace flashinfer
                     kv_stride_n, kv_stride_h, kv_len,
                     num_qo_heads, kv_chunk_size, tile_size_per_bdx, 
                     bdx,  bdy, bdz); 
+
+            launch_status = cudaGetLastError();
             
 
                 
-
         });
         
-        return cudaSuccess;
+        return launch_status;
     }
 
 
