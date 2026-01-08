@@ -4,6 +4,7 @@
 #include "model/llama2.h"
 #include "model/llama2_prompt.h"
 
+
 int32_t generate(const model::LLama2Model& model, const std::string& sentence, int total_steps,
                  bool need_output = false) 
 {
