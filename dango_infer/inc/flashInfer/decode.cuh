@@ -108,7 +108,6 @@ namespace flashinfer
             // do not apply rotary embedding        
             k_vec.cast_load(smem + (j * bdx + tx) * vec_size);
             
-
             s[j] = 0.f;
             #pragma unroll
             for (uint32_t i = 0; i < vec_size; ++i) 
@@ -378,8 +377,8 @@ namespace flashinfer
 
         // 单头时加载更多元素以提升吞吐
         //const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
-        //constexpr uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
-        constexpr uint32_t tile_size_per_bdx = 1U;
+        constexpr uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+        //constexpr uint32_t tile_size_per_bdx = 1U;
 
 
         // 只处理已写入的 KV 长度，避免访问未初始化的 cache
@@ -390,6 +389,8 @@ namespace flashinfer
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
         {
+
+            LOG(INFO)<<"NUM_STAGES_SMEM:"<<NUM_STAGES_SMEM;
             const uint32_t smeme_size = 2U * NUM_STAGES_SMEM * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T) + 2U * bdy * bdz * sizeof(float);
 
             dim3 nblks = dim3(1, num_kv_heads);
