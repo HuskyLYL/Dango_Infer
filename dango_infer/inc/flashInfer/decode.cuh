@@ -19,15 +19,19 @@ namespace flashinfer
 {
 
 
+    //对于value的计算，还是需要回顾一下的
     template <uint32_t vec_size, typename T>
     __device__ __inline__ void update_local_state(const T* smem, const float* s,
                                                    uint32_t compute_stage_idx,
                                                    state_t<vec_size>& st, uint32_t tx,uint32_t bdx, uint32_t tile_size) 
     {
+
+        // 所以tx到后面就不重要了，
         #pragma unroll
         for (uint32_t j = 0; j < tile_size; ++j) 
         {
             vec_t<float, vec_size> v_vec;
+            //用j去装我们的vec_size
             v_vec.cast_load(smem + (j * bdx + tx) * vec_size);
             #pragma unroll
             for (uint32_t i = 0; i < vec_size; ++i) 
@@ -71,7 +75,14 @@ namespace flashinfer
         }
     }
 
-
+    /*
+        K 的缓存（从生产者的共享内存那里读取）
+        q_vec 很早就装载好的变量
+        kv_idx_base 消费者现在算到的K_V 头
+        iter bound iter * bdy * tile_size_per_bdx * bdz
+        kv_chunk_size 一共处理多少个kv 的长度
+        tile_size = bdy * tile_size_per_bdx  对应几个query头和几个kv_seqlen
+    */
 
 
 
@@ -82,16 +93,19 @@ namespace flashinfer
     __device__ __forceinline__ void compute_qk(
         const uint32_t batch_idx, const T* smem,
         const vec_t<float, vec_size>& q_vec, const vec_t<float, vec_size>& freq, uint32_t kv_idx_base,
-        uint32_t iter_base, uint32_t iter_bound, uint32_t qo_head_idx, uint32_t kv_head_idx, float* s,
+        uint32_t iter_base, uint32_t iter_bound, 
+        uint32_t qo_head_idx, uint32_t kv_head_idx, float* s,
         state_t<vec_size>& st, const uint32_t tx, const uint32_t ty, const uint32_t tz,uint32_t tile_size,uint32_t bdx) 
     {
         float m_prev = st.m;
-
+        
+        //tile_size = group_size * tile_size_per_bdx(这个和共享内存里面一次装多少数据有关)
+        //现在不要想谁是谁加载的了，全部推倒重来
         #pragma unroll
         for (uint32_t j = 0; j < tile_size; ++j) 
         {
             vec_t<float, vec_size> k_vec;
-            // do not apply rotary embedding
+            // do not apply rotary embedding        
             k_vec.cast_load(smem + (j * bdx + tx) * vec_size);
             
 
@@ -100,6 +114,7 @@ namespace flashinfer
             for (uint32_t i = 0; i < vec_size; ++i) 
                 s[j] += q_vec[i] * k_vec[i];
 
+            //已经在线程内求过核了
             #pragma unroll
             for (uint32_t offset = bdx / 2; offset > 0; offset /= 2) 
                 s[j] += math::shfl_xor_sync(s[j], offset);
@@ -179,7 +194,7 @@ namespace flashinfer
         const uint32_t seq_len = kv_len;
         T* k_smem = (T*)smem;
 
-
+        //所以我一开始就理解错了嘛
         T* v_smem =
             (T*)(smem + num_stages_smem * bdy * tile_size_per_bdx * bdz * head_dim * sizeof(T));
         //这里是计算的中间变量的存放初，专门用来计算 m 和 d的
@@ -240,6 +255,7 @@ namespace flashinfer
             }
             cp_async::commit_group();
             //这里是seq的行起始偏移
+            //关键点在这里，chunk 一次加载多少行
             producer_kv_idx_base += bdy * bdz * tile_size_per_bdx;
         }
 
@@ -254,18 +270,24 @@ namespace flashinfer
 
         float* s = reinterpret_cast<float*>(smem_md + 2* bdy * bdz );
 
+        //这里的ceil_div 是向上整除
         #pragma unroll 2
         for (uint32_t iter = 0; iter < ceil_div(kv_chunk_size, tile_size_per_bdx * bdy * bdz); ++iter) 
         {
             // compute qk
             //等待拷贝完毕
+            //这里是先确认 K 是否拷贝完成
             cp_async::wait_group<2 * num_stages_smem - 1>();
             __syncthreads();
+            //这里其实经过z的定位了，这里是通过z来切分
+            //问题 ty在这里其实就已经为分组做准备了
+            // ty是分组的
             compute_qk<vec_size, T>(
-                /*batch_idx=*/0,
-                k_smem + (stage_idx * bdz + tz) * bdy * tile_size_per_bdx * head_dim, q_vec, freq,
-                consumer_kv_idx_base, iter * bdy * tile_size_per_bdx * bdz, kv_chunk_size, qo_head_idx,
-                kv_head_idx, s, st_local, tx, ty, tz, bdy * tile_size_per_bdx, bdx);
+                0, k_smem + (stage_idx * bdz + tz) * bdy * tile_size_per_bdx * head_dim, 
+                q_vec, freq,consumer_kv_idx_base, 
+                iter * bdy * tile_size_per_bdx * bdz, kv_chunk_size, 
+                qo_head_idx,kv_head_idx, s, 
+                st_local, tx, ty, tz, bdy * tile_size_per_bdx, bdx);
             __syncthreads();
 
             // load k
@@ -312,6 +334,7 @@ namespace flashinfer
         #pragma unroll
         for (size_t i = 0; i < vec_size; ++i) 
         {
+            //最后才来算和 okk
             float d_rcp = (st_local.m != -math::inf) ? math::ptx_rcp(st_local.d) : 0.f;
             //return output * d_rcp;
             st_local.o[i] = st_local.o[i]*d_rcp;
@@ -339,6 +362,7 @@ namespace flashinfer
         constexpr uint32_t vec_size = 16UL / sizeof(T);
         const uint32_t bdx = head_dim/ vec_size;
         auto compute_capacity = GetCudaComputeCapability();
+        //一个head_dim 要做归约操作，不能让他的值大于32了
         CHECK(bdx <= 32U);
 
         const uint32_t group_size = num_qo_heads / num_kv_heads;
