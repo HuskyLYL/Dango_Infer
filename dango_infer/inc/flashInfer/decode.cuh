@@ -361,7 +361,7 @@ namespace flashinfer
 
         //const uint32_t seq_len = kv_len;
 
-        constexpr uint32_t vec_size = 8UL / sizeof(T);
+        constexpr uint32_t vec_size = 16UL / sizeof(T);
         const uint32_t bdx = head_dim/ vec_size;
         auto compute_capacity = GetCudaComputeCapability();
         //一个head_dim 要做归约操作，不能让他的值大于32了
@@ -378,7 +378,8 @@ namespace flashinfer
 
         // 单头时加载更多元素以提升吞吐
         //const uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
-        constexpr uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+        //constexpr uint32_t tile_size_per_bdx = group_size == 1 ? (sizeof(T) == 1 ? 2U : 8U) : 1U;
+        constexpr uint32_t tile_size_per_bdx = 1U;
 
 
         // 只处理已写入的 KV 长度，避免访问未初始化的 cache
