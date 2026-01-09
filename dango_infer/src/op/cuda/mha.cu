@@ -5,6 +5,7 @@
 #include "kernel/cuda/mha.cuh"
 #include <base/tick.h>
 #include <cuda_bf16.h>
+#include <cuda_profiler_api.h>
 namespace base_kernel_cu 
 {
     constexpr static int thread_num = 256;
@@ -282,6 +283,17 @@ namespace bf16x8_kernel_cu
         const __nv_bfloat16* value_cache = value_cache_tensor.ptr<__nv_bfloat16>();
 
         size_t shared_mem = (head_size + pos + 1) * sizeof(float);
+        const bool profiler_enabled = seq_len > 1000;
+        if (profiler_enabled) 
+        {
+            auto profiler_status = cudaProfilerStart();
+            if (profiler_status != cudaSuccess) 
+            {
+                LOG(WARNING) << "cudaProfilerStart failed: "
+                             << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
+            }
+        }
+
         if (stream)
             multi_head_attention_kernel_bf16<<<head_num, thread_num, shared_mem, stream>>>(
                 pos, seq_len, query, score, output, key_cache, value_cache, kv_dim, kv_mul, head_num,
@@ -290,6 +302,16 @@ namespace bf16x8_kernel_cu
             multi_head_attention_kernel_bf16<<<head_num, thread_num, shared_mem>>>(
                 pos, seq_len, query, score, output, key_cache, value_cache, kv_dim, kv_mul, head_num,
                 head_size, layer_offset);
+        
+        if (profiler_enabled) 
+        {
+            auto profiler_status = cudaProfilerStop();
+            if (profiler_status != cudaSuccess) 
+            {
+                LOG(WARNING) << "cudaProfilerStop failed: "
+                             << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
+            }
+        }
         //auto err = cudaGetLastError();
         //LOG(INFO)<<cudaGetErrorString(err)<<"\n";
     }
