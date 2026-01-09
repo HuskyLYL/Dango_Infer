@@ -18,7 +18,7 @@ cmake ..
 make
 cd sampler/simple_chat
 /home/lyl/local/NVIDIA-Nsight-Compute-2025.4/ncu --target-processes all \
-    --kernel-name "SingleDecodeWithKVCacheKernel.*" \
+    --kernel-name SingleDecodeWithKVCacheKernel \
     --set full \
     ./simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
 
