@@ -60,7 +60,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
 
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
-    LOG(INFO)<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
+    LOG(INFO)<<"pos:"<<pos<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
 
     pos += 1;
   }

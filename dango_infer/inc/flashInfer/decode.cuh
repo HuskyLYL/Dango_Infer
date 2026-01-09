@@ -9,6 +9,7 @@
 #include<flashInfer/utils.cuh>
 #include<flashInfer/state.cuh>
 #include<tensor/tensor.h>
+#include <cuda_profiler_api.h>
 #include<base/base.h>
 
 
@@ -386,6 +387,17 @@ namespace flashinfer
         kv_chunk_size = kv_len;
 
         cudaError_t launch_status = cudaSuccess;
+        const bool profiler_enabled = kv_len > 1000U;
+
+        if (profiler_enabled) 
+        {
+            auto profiler_status = cudaProfilerStart();
+            if (profiler_status != cudaSuccess) 
+            {
+                LOG(WARNING) << "cudaProfilerStart failed: "
+                             << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
+            }
+        }
         //static bool logged = false;
 
         DISPATCH_COMPUTE_CAP_DECODE_NUM_STAGES_SMEM(compute_capacity, NUM_STAGES_SMEM, 
@@ -397,24 +409,7 @@ namespace flashinfer
             dim3 nblks = dim3(1, num_kv_heads);
             dim3 nthrs = dim3(bdx, bdy, bdz);
 
-            // if (base::g_enable_debug_log)
-            // {
-            //     int max_smem = 0;
-            //     cudaDeviceGetAttribute(&max_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
 
-            //     LOG(INFO) << "SingleDecodeWithKVCacheKernel launch: "
-            //               << "head_dim=" << head_dim
-            //               << " num_qo_heads=" << num_qo_heads
-            //               << " num_kv_heads=" << num_kv_heads
-            //               << " kv_len=" << kv_len
-            //               << " bdx=" << bdx << " bdy=" << bdy << " bdz=" << bdz
-            //               << " tile_size_per_bdx=" << tile_size_per_bdx
-            //               << " smem=" << smeme_size
-            //               << " smem_limit=" << max_smem
-            //               << " nblks=(" << nblks.x << "," << nblks.y << "," << nblks.z << ")"
-            //               << " nthrs=(" << nthrs.x << "," << nthrs.y << "," << nthrs.z << ")";
-            //     logged = true;
-            // }
 
             // opt-in 动态共享内存上限
             int max_smem = 0;
@@ -436,6 +431,7 @@ namespace flashinfer
             }
             else
             {
+                //mha 我是要放在这个地方的
                 if(stream)
                 
                     SingleDecodeWithKVCacheKernel<T,NUM_STAGES_SMEM,vec_size,tile_size_per_bdx,bdy><<<nblks,nthrs,smeme_size,stream>>>(
@@ -457,6 +453,16 @@ namespace flashinfer
 
                 
         });
+
+        if (profiler_enabled) 
+        {
+            auto profiler_status = cudaProfilerStop();
+            if (profiler_status != cudaSuccess) 
+            {
+                LOG(WARNING) << "cudaProfilerStop failed: "
+                             << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
+            }
+        }
         
         return launch_status;
     }
