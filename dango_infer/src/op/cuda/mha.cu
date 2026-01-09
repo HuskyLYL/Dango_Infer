@@ -4,6 +4,7 @@
 #include <cuda/functional>        // cuda::maximum
 #include "kernel/cuda/mha.cuh"
 #include <base/tick.h>
+#include <base/base.h>
 #include <cuda_bf16.h>
 #include <cuda_profiler_api.h>
 #include <glog/logging.h>
@@ -304,10 +305,10 @@ namespace bf16x8_kernel_cu
                 head_size, layer_offset);
         if (profiler_enabled) 
         {
-            auto profiler_status = cudaProfilerPause();
+            auto profiler_status = cuda_profiler_pause_compat();
             if (profiler_status != cudaSuccess) 
             {
-                LOG(WARNING) << "cudaProfilerPause failed: "
+                LOG(WARNING) << "cuda_profiler_pause_compat failed: "
                              << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
             }
         }
