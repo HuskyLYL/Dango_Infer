@@ -17,4 +17,5 @@ cd build
 cmake ..
 make
 cd sampler/simple_chat
-./simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+nsys profile --trace=cuda --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop \
+  ./simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
