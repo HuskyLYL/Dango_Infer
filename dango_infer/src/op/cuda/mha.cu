@@ -305,10 +305,10 @@ namespace bf16x8_kernel_cu
                 head_size, layer_offset);
         if (profiler_enabled) 
         {
-            auto profiler_status = cuda_profiler_pause_compat();
+            auto profiler_status = cudaProfilerStop();
             if (profiler_status != cudaSuccess) 
             {
-                LOG(WARNING) << "cuda_profiler_pause_compat failed: "
+                LOG(WARNING) << "cudaProfilerStop failed: "
                              << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
             }
         }

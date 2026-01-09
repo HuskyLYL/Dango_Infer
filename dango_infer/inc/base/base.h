@@ -28,17 +28,6 @@
         }                                                                       \
     } while (0)
 
-// cudaProfilerPause is only available on newer toolkits; fall back to Stop when missing.
-inline cudaError_t cuda_profiler_pause_compat()
-{
-#if defined(CUDART_VERSION) && (CUDART_VERSION >= 11020)
-    return cudaProfilerPause();
-#else
-    return cudaProfilerStop();
-#endif
-}
-
-
 
 namespace model 
 {
