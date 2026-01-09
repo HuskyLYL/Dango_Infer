@@ -456,10 +456,10 @@ namespace flashinfer
 
         if (profiler_enabled) 
         {
-            auto profiler_status = cudaProfilerStop();
+            auto profiler_status = cudaProfilerPause();
             if (profiler_status != cudaSuccess) 
             {
-                LOG(WARNING) << "cudaProfilerStop failed: "
+                LOG(WARNING) << "cudaProfilerPause failed: "
                              << cudaGetErrorString(profiler_status) << " (" << static_cast<int>(profiler_status) << ")";
             }
         }
