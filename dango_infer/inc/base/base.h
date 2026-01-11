@@ -28,6 +28,17 @@
         }                                                                       \
     } while (0)
 
+#define CUDACHECK(cmd)                                                         \
+  do {                                                                         \
+    cudaError_t err = cmd;                                                     \
+    if (err != cudaSuccess) {                                                  \
+      fprintf(stderr, "Failed: Cuda error %s:%d '%s'\n", __FILE__, __LINE__,   \
+              cudaGetErrorString(err));                                        \
+      fprintf(stderr, "Failed CUDA operation: %s\n", #cmd);                    \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  } while (0)
+
 
 namespace model 
 {

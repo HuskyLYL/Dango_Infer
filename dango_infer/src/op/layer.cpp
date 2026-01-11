@@ -1,5 +1,6 @@
 #include "op/layer.h"
 #include <glog/logging.h>
+#include "nccl/base.h"
 #include <cstdarg>
 #include <numeric>
 #include <utility>
@@ -172,7 +173,11 @@ namespace op
     {
         CHECK_GE(idx, 0);
         CHECK_LT(idx, weights_.size());
-        weights_.at(idx) = weight;
+
+        tensor::Tensor local_weight = weight;
+        local_weight.to_device(static_cast<base::deviceId>(nccl::G_LOCAL_RANK));
+
+        weights_.at(idx) = local_weight;
         return base::error::Success();
     }
 
@@ -197,6 +202,8 @@ namespace op
         //托管的值一般为模型参数映射过来的值
         //所以这里不用担心释放的风险
         tensor::Tensor weight(dims,device_id,weight_data_type,const_cast<void*>(weight_ptr));
+
+        weight.to_device(static_cast<base::deviceId>(nccl::G_LOCAL_RANK));
 
         weights_.at(idx) = weight;
      

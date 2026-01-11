@@ -116,9 +116,11 @@ namespace op
         CHECK_LT(idx, bias_.size());
         CHECK_NE(bias_ptr, nullptr);
 
-
-        tensor::Tensor bias(dim, device_id, base::DataType::kDataTypeFp32,
+        //默认bias的来源是在CPU上的
+        tensor::Tensor bias(dim, base::CPUID, base::DataType::kDataTypeFp32,
                             const_cast<void*>(bias_ptr));
+
+        bias.to_device(device_id);
         bias_.at(idx) = bias;
 
 

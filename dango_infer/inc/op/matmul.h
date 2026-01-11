@@ -21,7 +21,7 @@ namespace op
 
         const tensor::Tensor& get_bias(int32_t idx) const;
 
-    private:
+    protected:
         bool has_bias_ = false;
         
         std::vector<tensor::Tensor> bias_;

@@ -9,6 +9,9 @@ namespace bf16x8_kernel_cu
 
     typedef void (*Embedding)(const tensor::Tensor& input1, const tensor::Tensor& input2,
         const tensor::Tensor& output, void* stream);
+        
+    typedef void (*ParallelEmbedding)(const tensor::Tensor& input_tokens,
+        const tensor::Tensor& embedding, const tensor::Tensor& output, void* stream);
 
     typedef void (*Matmul)(const tensor::Tensor& input, const tensor::Tensor& weight,
         const tensor::Tensor& output, float scale ,cudaStream_t  stream);
@@ -27,6 +30,7 @@ namespace bf16x8_kernel_cu
     Elementwise get_elementwise_kernel();
 
     Embedding get_embedding_kernel();
+    ParallelEmbedding get_parallel_embedding_kernel();
 
     Matmul get_matmul_kernel();
 
@@ -50,6 +54,9 @@ namespace f32x4_kernel_cu
     typedef void (*Embedding)(const tensor::Tensor& input1, const tensor::Tensor& input2,
         const tensor::Tensor& output, void* stream );
 
+    typedef void (*ParallelEmbedding)(const tensor::Tensor& input_tokens,
+        const tensor::Tensor& embedding, const tensor::Tensor& output, void* stream);
+
     typedef void (*Rmsnorm)(const tensor::Tensor& input, const tensor::Tensor& weight,
         const tensor::Tensor& output, void* stream );
 
@@ -62,6 +69,7 @@ namespace f32x4_kernel_cu
     Elementwise get_elementwise_kernel();
 
     Embedding get_embedding_kernel();
+    ParallelEmbedding get_parallel_embedding_kernel();
 
     Rmsnorm get_rmsn_kernel();
 
