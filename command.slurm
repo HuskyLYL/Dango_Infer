@@ -24,7 +24,8 @@ export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
 
-nvidia-smi
+nvidia-smi -L 
+exit 0
 rm -r build
 mkdir build
 cd build
