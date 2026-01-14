@@ -103,6 +103,9 @@ int main(int argc, char* argv[])
     model::ParallelLLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeBf16,false);
 
     LOG(INFO) << "Start initializing the model on Device:"<<nccl::G_LOCAL_RANK;
+
+    LOG(INFO) <<"Node INFO"<<nccl::G_MPI_RANK<<" "<<nccl::G_MPI_SIZE<<" "<<nccl::G_LOCAL_RANK<<"\n";
+
     auto init_status = model.init(nccl::G_LOCAL_RANK);
     
     if (!init_status) 
