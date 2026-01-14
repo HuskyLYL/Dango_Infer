@@ -14,6 +14,7 @@ spack load glog
 spack load sentencepiece
 spack load googletest
 spack load armadillo
+spack load nccl
 #network env for nccl
 export NCCL_SOCKET_IFNAME=${NCCL_SOCKET_IFNAME:-eth0}
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}

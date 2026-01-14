@@ -43,32 +43,18 @@ add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} 
 
 find_package(glog REQUIRED)
 
-find_package(NCCL QUIET)
-if(NOT NCCL_FOUND)
-    find_path(NCCL_INCLUDE_DIR nccl.h
-        HINTS $ENV{NCCL_ROOT}/include $ENV{CONDA_PREFIX}/include /usr/local/include /usr/include /usr/local/cuda/include)
-    find_library(NCCL_LIBRARY nccl
-        HINTS $ENV{NCCL_ROOT}/lib $ENV{NCCL_ROOT}/lib64 $ENV{CONDA_PREFIX}/lib /usr/local/lib /usr/local/lib64 /usr/lib /usr/lib64 /usr/local/cuda/lib64)
-    if(NOT NCCL_INCLUDE_DIR OR NOT NCCL_LIBRARY)
-        message(FATAL_ERROR "NCCL not found: set NCCL_ROOT or NCCL_INCLUDE_DIR/NCCL_LIBRARY.")
-    endif()
-else()
-    set(NCCL_INCLUDE_DIR ${NCCL_INCLUDE_DIRS})
-    set(NCCL_LIBRARY ${NCCL_LIBRARIES})
-endif()
+find_package(NCCL REQUIRED)
 
 
-target_link_libraries(dango_infer glog::glog sentencepiece ${NCCL_LIBRARY})
+target_link_libraries(dango_infer glog::glog sentencepiece NCCL::NCCL)
 
 
 target_include_directories(dango_infer PUBLIC ${PROJECT_SOURCE_DIR}/dango_infer/inc)
 target_include_directories(dango_infer PUBLIC ${glog_INCLUDE_DIR})
 target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-target_include_directories(dango_infer PUBLIC ${NCCL_INCLUDE_DIR})
 
 
 add_subdirectory(sampler/simple_chat)
 add_subdirectory(sampler/test)
 add_subdirectory(sampler/tp_parallel_simple_chat)
-
 
