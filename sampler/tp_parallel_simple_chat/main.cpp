@@ -2,7 +2,9 @@
 #include <base/tick.h>
 #include <glog/logging.h>
 #include "model/llama2.h"
+#include "model/parallel_llama2.h"
 #include "model/llama2_prompt.h"
+#include "nccl/base.h"
 
 
 int32_t generate(const model::LLama2Model& model, const std::string& sentence, int total_steps,
@@ -83,32 +85,25 @@ int main(int argc, char* argv[])
     FLAGS_colorlogtostderr = 1;
     FLAGS_log_prefix = 1;
 
-    //model::PromptSession sess;
-    //sess.set_system("Rules:\n1) be concise\n2) no emojis");
-    //sess.add_user("Why top-p sampling?");
-    //std::string p0 = sess.build();
-    //LOG(INFO)<<p0;
-    //sess.add_assistant("Top-p sampling keeps the smallest set of tokens whose cumulative probability >= p.");
-    //sess.add_user("Why top-p sampling?");
-    //p0 = sess.build();
-    //LOG(INFO)<<p0;
-    //return 0;
 
 
+
+    nccl::InitNcclWithMpi(argc, argv);
     
     if (argc != 3) 
     {
         LOG(INFO) << "Usage: ./demo checkpoint path tokenizer path";
+        nccl::FinalizeNccl();
         return -1;
     }
 
     const char* checkpoint_path = argv[1];  // e.g. out/model.bin
     const char* tokenizer_path = argv[2];
 
-    model::LLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeBf16,false);
+    model::ParallelLLama2Model model(base::TokenizerType::kEncodeSpe, tokenizer_path,checkpoint_path, base::DataType::kDataTypeBf16,false);
 
-    LOG(INFO) << "Start initializing the model.";
-    auto init_status = model.init(0);
+    LOG(INFO) << "Start initializing the model on Device:"<<nccl::G_LOCAL_RANK;
+    auto init_status = model.init(nccl::G_LOCAL_RANK);
     
     if (!init_status) 
         LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
@@ -122,11 +117,12 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");
     fflush(stdout);
-    int steps = generate(model, sentence, 2048, true);
+    int steps = generate(model, sentence, 100, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
     fflush(stdout);
+    nccl::FinalizeNccl();
     return 0;
 
 
