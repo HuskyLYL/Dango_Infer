@@ -32,12 +32,13 @@ aux_source_directory(dango_infer/src/model/ DIR_MODEL)
 aux_source_directory(dango_infer/src/op/ DIR_OP)
 aux_source_directory(dango_infer/src/kernel/ DIR_KERNEL)
 aux_source_directory(dango_infer/src/op/cuda DIR_CUDA)
+aux_source_directory(dango_infer/src/nccl DIR_NCCL)
 aux_source_directory(dango_infer/src/op/flashInfer DIR_flashInfer)
 aux_source_directory(dango_infer/src/sampler DIR_SAMPLER)
 
 
 
-add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} ${DIR_KERNEL} ${DIR_CUDA} ${DIR_SAMPLER} ${DIR_flashInfer})
+add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} ${DIR_KERNEL} ${DIR_CUDA} ${DIR_SAMPLER} ${DIR_flashInfer} ${DIR_NCCL})
 
 
 find_package(glog REQUIRED)
@@ -47,14 +48,14 @@ find_package(glog REQUIRED)
 target_link_libraries(dango_infer glog::glog sentencepiece)
 
 
-
-
 target_include_directories(dango_infer PUBLIC ${PROJECT_SOURCE_DIR}/dango_infer/inc)
 target_include_directories(dango_infer PUBLIC ${glog_INCLUDE_DIR})
 target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
+
 add_subdirectory(sampler/simple_chat)
 add_subdirectory(sampler/test)
+add_subdirectory(sampler/tp_parallel_simple_chat)
 
 
 

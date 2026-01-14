@@ -104,4 +104,59 @@ namespace op
 
     return base::StatusCode::kSuccess;
   }
+
+  base::Status ParallelEmbeddingLayer::set_weight(int32_t idx, const tensor::Tensor& weight)
+  {
+    CHECK_EQ(idx, 0);
+    CHECK_GT(nccl::G_MPI_SIZE, 0);
+
+    const int32_t rows = weight.get_dim(0);
+    const int32_t cols = weight.get_dim(1);
+    CHECK_EQ(rows % nccl::G_MPI_SIZE, 0)
+        << "Embedding vocab rows must be divisible by world size";
+
+    const int32_t rows_per_rank = rows / nccl::G_MPI_SIZE;
+    const size_t elem_bytes = base::DataTypeSize(weight.data_type());
+    const size_t offset_bytes = static_cast<size_t>(rows_per_rank) * static_cast<size_t>(cols) * elem_bytes
+        * static_cast<size_t>(nccl::G_MPI_RANK);
+
+    // Create a local tensor view of this rank's vocab slice.
+    void* offset_ptr = static_cast<char*>(const_cast<void*>(weight.get_buffer()->ptr())) + offset_bytes;
+    tensor::Tensor local_weight({rows_per_rank, cols}, weight.getDeviceId(), weight.data_type(), offset_ptr);
+
+    return LayerParam::set_weight(idx, local_weight);
+  }
+
+  base::Status ParallelEmbeddingLayer::set_weight(int32_t idx, const std::vector<int32_t>& dims,
+    const void* weight_ptr, base::deviceId device_id, base::DataType weight_data_type)
+  {
+    CHECK_EQ(idx, 0);
+    CHECK_GT(nccl::G_MPI_SIZE, 0);
+    CHECK_EQ(dims.size(), 2u);
+
+    const int32_t rows = dims[0];
+    const int32_t cols = dims[1];
+    CHECK_EQ(rows % nccl::G_MPI_SIZE, 0)
+        << "Embedding vocab rows must be divisible by world size";
+
+    const int32_t rows_per_rank = rows / nccl::G_MPI_SIZE;
+    const size_t elem_bytes = base::DataTypeSize(weight_data_type);
+    const size_t offset_bytes = static_cast<size_t>(rows_per_rank) * static_cast<size_t>(cols) * elem_bytes
+        * static_cast<size_t>(nccl::G_MPI_RANK);
+
+    const char* src = static_cast<const char*>(weight_ptr) + offset_bytes;
+
+    tensor::Tensor local_weight({rows_per_rank, cols}, device_id, weight_data_type, nullptr);
+
+    // Copy the slice into local_weight buffer.
+    void* dst_ptr = local_weight.get_buffer()->ptr();
+    const size_t bytes_to_copy = static_cast<size_t>(rows_per_rank) * static_cast<size_t>(cols) * elem_bytes;
+
+    if (device_id == base::CPUID)
+        memcpy(dst_ptr, src, bytes_to_copy);
+    else
+        CUDACHECK(cudaMemcpy(dst_ptr, src, bytes_to_copy, cudaMemcpyDefault));
+
+    return LayerParam::set_weight(idx, local_weight);
+  }
 }  // namespace op

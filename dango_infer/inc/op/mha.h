@@ -17,7 +17,7 @@ namespace op
 
         base::Status forward(cudaStream_t stream=nullptr) override;
 
-    private:
+    protected:
         
         int32_t layer_index_ = 0;
         int32_t pos_ = 0;

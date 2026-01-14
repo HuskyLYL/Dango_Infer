@@ -25,6 +25,11 @@ namespace op
 
         base::Status forward(cudaStream_t stream=nullptr) override;
 
+        base::Status set_weight(int32_t idx, const tensor::Tensor& weight) override;
+
+        base::Status set_weight(int32_t idx, const std::vector<int32_t>& dims, const void* weight_ptr,
+            base::deviceId device_id ,base::DataType weight_data_type = base::DataType::kDataTypeFp32) override;
+
     //private:
     //    int32_t dim_ = 0;
     //    int32_t seq_len_ = 0;

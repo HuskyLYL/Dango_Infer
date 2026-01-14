@@ -73,7 +73,7 @@ namespace model
 
         int32_t post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream = nullptr) const override;
 
-    private:
+    protected:
 
 
         std::unique_ptr<LLama2Layers> llama_layers_;

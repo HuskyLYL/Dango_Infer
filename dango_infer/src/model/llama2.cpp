@@ -140,7 +140,7 @@ namespace model
       // create weight matrix for query
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          auto wq = std::make_shared<op::MatmulLayer>();
+          auto wq = std::make_shared<op::ColomParallelMatmulLayer>();
           wq->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wq->to_device(device_id_);
           llama_layers_->wq_layers_.push_back(wq);
