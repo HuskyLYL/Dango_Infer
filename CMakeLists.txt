@@ -44,14 +44,16 @@ add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} 
 
 
 find_package(glog REQUIRED)
+find_package(MPI REQUIRED)
 
 
-target_link_libraries(dango_infer glog::glog sentencepiece nccl)
+target_link_libraries(dango_infer glog::glog sentencepiece nccl MPI::MPI_CXX)
 
 
 target_include_directories(dango_infer PUBLIC ${PROJECT_SOURCE_DIR}/dango_infer/inc)
 target_include_directories(dango_infer PUBLIC ${glog_INCLUDE_DIR})
 target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(dango_infer PUBLIC ${MPI_CXX_INCLUDE_DIRS})
 
 
 add_subdirectory(sampler/simple_chat)
