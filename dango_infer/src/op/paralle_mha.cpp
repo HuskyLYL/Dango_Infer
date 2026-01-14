@@ -34,16 +34,6 @@ namespace op
         return MultiHeadAttention::check();
     }
 
-    base::Status Paralle_MultiHeadAttenton::forward(cudaStream_t stream)
-    {
-        auto status = check();
-        if (!status)
-            return status;
-
-        return MultiHeadAttention::forward(stream);
-    }
-
-
     base::Status Paralle_MultiHeadAttenton::forward(const tensor::Tensor& input1, const tensor::Tensor& input2,
         const tensor::Tensor& input3, const tensor::Tensor& input4,
         const tensor::Tensor& output1, cudaStream_t stream)
@@ -88,12 +78,11 @@ namespace op
         this->set_input(3, input4);
         this->set_output(0, local_output);
 
-        // Run local forward then all-gather to rebuild full output.
-        auto status = forward(stream);
+        // Run local forward.
+        auto status = MultiHeadAttention::forward(stream);
         if (!status)
             return status;
 
-    
         return base::error::Success();
     }
 }  // namespace op
