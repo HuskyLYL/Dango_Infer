@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 
     LOG(INFO) << "Start initializing the model on Device:"<<nccl::G_LOCAL_RANK;
 
-    LOG(INFO) <<"Node INFO: "<<nccl::G_MPI_RANK<<" "<<nccl::G_MPI_SIZE<<" "<<nccl::G_LOCAL_RANK<<"\n";
+    
 
     nccl::FinalizeNccl();
     return 0;

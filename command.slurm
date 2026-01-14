@@ -23,8 +23,7 @@ export NCCL_IB_DISABLE=${NCCL_IB_DISABLE:-0}
 export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
-srun -l --mpi=pmix bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L'
-exit 0
+
 rm -r build
 mkdir build
 cd build

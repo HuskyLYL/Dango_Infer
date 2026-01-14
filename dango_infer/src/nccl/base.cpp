@@ -34,6 +34,9 @@ namespace nccl
 
 
         // bind each process to its local GPU id
+
+        LOG(INFO) <<"Node INFO: "<<nccl::G_MPI_RANK<<" "<<nccl::G_MPI_SIZE<<" "<<nccl::G_LOCAL_RANK<<"\n";
+
         CUDACHECK(cudaSetDevice(G_LOCAL_RANK));
 
         if (G_MPI_RANK == 0) 
