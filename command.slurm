@@ -20,7 +20,10 @@ spack load openmpi
 export NCCL_SOCKET_IFNAME=${NCCL_SOCKET_IFNAME:-eth0}
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
 export NCCL_IB_DISABLE=${NCCL_IB_DISABLE:-0}
+export NCCL_SOCKET_IFNAME=br0
 
+
+nvidia-smi
 rm -r build
 mkdir build
 cd build
