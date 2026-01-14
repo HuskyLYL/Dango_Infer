@@ -31,7 +31,7 @@ cd build
 cmake ..
 make
 cd sampler/tp_parallel_simple_chat
-srun --mpi=pmix bash -lc 'export CUDA_VISIBLE_DEVICES=$SLURM_LOCALID; ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model'
+srun --mpi=pmix ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
 
 
 
