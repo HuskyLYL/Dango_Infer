@@ -11,6 +11,8 @@ set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
 project(dango_infer CXX CUDA)
 include(cmake/cuda.cmake)
 include(cmake/sentencepiece.cmake)
+include(cmake/nccl.cmake)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 
 
@@ -43,10 +45,8 @@ add_library(dango_infer SHARED ${DIR_BASE} ${DIR_TENSOR} ${DIR_MODEL} ${DIR_OP} 
 
 find_package(glog REQUIRED)
 
-find_package(NCCL REQUIRED)
 
-
-target_link_libraries(dango_infer glog::glog sentencepiece NCCL::NCCL)
+target_link_libraries(dango_infer glog::glog sentencepiece nccl)
 
 
 target_include_directories(dango_infer PUBLIC ${PROJECT_SOURCE_DIR}/dango_infer/inc)
@@ -57,4 +57,3 @@ target_include_directories(dango_infer PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIREC
 add_subdirectory(sampler/simple_chat)
 add_subdirectory(sampler/test)
 add_subdirectory(sampler/tp_parallel_simple_chat)
-
