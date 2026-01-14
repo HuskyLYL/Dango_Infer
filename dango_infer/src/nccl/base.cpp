@@ -32,12 +32,8 @@ namespace nccl
 
         CHECK_NE(num_gpus, 0) << "No CUDA devices found on this node";
 
-        CHECK_LT(G_LOCAL_RANK, num_gpus)
-            << "Process " << G_MPI_RANK << " needs GPU " << G_LOCAL_RANK
-            << " but only " << num_gpus << " device(s) available";
 
-
-        //确实,一个进程一个cudaDevice我就不用总是切换我的Device了
+        // bind each process to its local GPU id
         CUDACHECK(cudaSetDevice(G_LOCAL_RANK));
 
         if (G_MPI_RANK == 0) 
