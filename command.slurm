@@ -30,7 +30,7 @@ cd build
 cmake ..
 make
 cd sampler/tp_parallel_simple_chat
-srun --mpi=pmix ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+srun --mpi=pmi2 ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
 
 
 
