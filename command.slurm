@@ -23,7 +23,7 @@ export NCCL_IB_DISABLE=${NCCL_IB_DISABLE:-0}
 export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
-
+echo "Current host: $(hostname)"
 nvidia-smi -L 
 exit 0
 rm -r build
