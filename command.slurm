@@ -7,7 +7,7 @@
 #SBATCH --ntasks=4                          #总进程数
 #SBATCH --ntasks-per-node=2                 #每节点2进程
 #SBATCH --gpus-per-task=1                   #每进程1张GPU
-#SBATCH --nodelist=hepnode2,hepnode3        #节点列表
+#SBATCH --nodelist=hepnode1,hepnode2        #节点列表
 
 source ../../spack/share/spack/setup-env.sh
 spack load glog
