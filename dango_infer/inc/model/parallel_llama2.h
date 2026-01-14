@@ -5,7 +5,6 @@
 #include "op/parallel_embedding.h"
 #include "op/colom_parallel_matmul.h"
 #include "op/row_parallel_matmul.h"
-#include "op/parallel_elementwise.h"
 #include "op/parallel_swiglu.h"
 #include "op/paralle_mha.h"
 
