@@ -67,8 +67,8 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     pos += 1;
   }
 
-
-  if (need_output) {
+  //只在主RANK上输出
+  if (need_output && nccl::G_MPI_RANK == 0) {
     printf("%s ", model.decode(words).data());
     fflush(stdout);
   }
