@@ -134,8 +134,12 @@ int main(int argc, char* argv[])
     int steps = generate(model, sentence, 100, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
-    printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
-    fflush(stdout);
+    if(nccl::G_MPI_RANK==0)
+    {
+      printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
+      fflush(stdout);
+    }
+
     nccl::FinalizeNccl();
     return 0;
 
