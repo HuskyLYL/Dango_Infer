@@ -26,8 +26,6 @@ namespace nccl
         //这里使用srun 启动 每个节点固定分配一个GPU
         //G_LOCAL_RANK = 0;
 
-        LOG(INFO)<<"MPI initialized - Process"<<G_MPI_RANK<<"of "<<G_MPI_RANK<< "total processes\n";
-
         CUDACHECK(cudaGetDeviceCount(&num_gpus));
         LOG(INFO)<<"Found "<<num_gpus<<" CUDA devices on this node\n";
 
