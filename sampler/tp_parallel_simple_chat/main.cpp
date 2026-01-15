@@ -29,7 +29,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     auto start = std::chrono::steady_clock::now();
 
     if(nccl::G_MPI_RANK==0)
-      base::g_enable_debug_log = true;
+      base::g_enable_debug_log = false;
 
 
     
@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
     
     printf("RANK[%d]Generating...\n",nccl::G_MPI_RANK);
     fflush(stdout);
-    int steps = generate(model, sentence, 1, true);
+    int steps = generate(model, sentence, 100, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
