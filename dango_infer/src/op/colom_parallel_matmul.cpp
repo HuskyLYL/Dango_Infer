@@ -15,22 +15,39 @@ namespace op
     {
         CHECK_GT(nccl::G_MPI_SIZE, 0);
 
+        // Weight is already column-sharded per rank.
+        const tensor::Tensor& weight = get_weight(0);
+        const int32_t rows = weight.get_dim(0);
+        const int32_t cols_local = weight.get_dim(1);
+
+        tensor::Tensor input_view = input1;
         const size_t total_in = input1.size();
-        CHECK_EQ(total_in % static_cast<size_t>(nccl::G_MPI_SIZE), 0u)
-            << "ColomParallelMatmul input size must be divisible by world size";
+        if (static_cast<int32_t>(total_in) == cols_local)
+        {
+            // Input is already local.
+        }
+        else
+        {
+            CHECK_EQ(total_in % static_cast<size_t>(nccl::G_MPI_SIZE), 0u)
+                << "ColomParallelMatmul input size must be divisible by world size or already local.";
 
-        const size_t per_rank_in = total_in / static_cast<size_t>(nccl::G_MPI_SIZE);
-        const size_t elem_bytes = base::DataTypeSize(input1.data_type());
-        const size_t offset_bytes =
-            per_rank_in * elem_bytes * static_cast<size_t>(nccl::G_MPI_RANK);
+            const size_t per_rank_in = total_in / static_cast<size_t>(nccl::G_MPI_SIZE);
+            CHECK_EQ(static_cast<int32_t>(per_rank_in), cols_local)
+                << "Local input slice size must match local weight cols.";
 
-        void* offset_ptr =
-            static_cast<char*>(const_cast<void*>(input1.get_buffer()->ptr())) + offset_bytes;
-        tensor::Tensor input_view(static_cast<int32_t>(per_rank_in),
-                                input1.getDeviceId(),
-                                input1.data_type(),
-                                offset_ptr);
+            const size_t elem_bytes = base::DataTypeSize(input1.data_type());
+            const size_t offset_bytes =
+                per_rank_in * elem_bytes * static_cast<size_t>(nccl::G_MPI_RANK);
 
+            void* offset_ptr =
+                static_cast<char*>(const_cast<void*>(input1.get_buffer()->ptr())) + offset_bytes;
+            input_view = tensor::Tensor(static_cast<int32_t>(per_rank_in),
+                                        input1.getDeviceId(),
+                                        input1.data_type(),
+                                        offset_ptr);
+        }
+
+        // Output stays as provided (caller controls layout/all-reduce target).
         this->set_input(0, input_view);
         this->set_output(0, output1);
 
