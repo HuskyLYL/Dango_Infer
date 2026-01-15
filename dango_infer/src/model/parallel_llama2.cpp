@@ -151,7 +151,7 @@ namespace model
       int32_t hidden_dim = config_->hidden_dim_;
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-            LOG(INFO)<<"#######################################"<<endl;
+
           auto w1 = std::make_shared<op::RowMatmulLayer>(false);
           w1->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos),base::CPUID,data_type_);
           w1->to_device(device_id_);
