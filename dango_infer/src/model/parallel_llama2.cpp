@@ -242,7 +242,7 @@ namespace model
         llama_layers_->rope_layer_ = std::make_shared<op::RoPELayer>(config_->dim_, config_->kv_dim_, config_->head_size_);
 
         //pos 是计算cacheo算到多少层    但是cache会预留一个大的空间,所以这里不需要担心
-        llama_layers_->mha_layer_ = std::make_shared<op::MultiHeadAttention>(0, config_->kv_mul_, config_->kv_dim_, 
+        llama_layers_->mha_layer_ = std::make_shared<op::Paralle_MultiHeadAttenton>(0, config_->kv_mul_, config_->kv_dim_, 
         config_->seq_len_, config_->head_num_,config_->head_size_);
 
         llama_layers_->add_layer_ = std::make_shared<op::VecAddLayer>();
