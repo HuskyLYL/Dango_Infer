@@ -84,7 +84,7 @@ namespace op
         if (!status)
             return status;
 
-        nccl::TensorAllGather(output1);
+        //nccl::TensorAllGather(output1);
 
 
         return base::error::Success();

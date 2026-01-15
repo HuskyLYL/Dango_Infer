@@ -139,8 +139,8 @@ namespace model
       // create weight matrix for output
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          //auto wo = std::make_shared<op::ColomParallelMatmulLayer>(true);
-          auto wo = std::make_shared<op::MatmulLayer>();
+          auto wo = std::make_shared<op::ColomParallelMatmulLayer>(true);
+          //auto wo = std::make_shared<op::MatmulLayer>();
           wo->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wo->to_device(device_id_);
           llama_layers_->wo_layers_.push_back(wo);
@@ -165,8 +165,8 @@ namespace model
       // w2 layers
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          //auto w2 = std::make_shared<op::ColomParallelMatmulLayer>(true);
-          auto w2 = std::make_shared<op::MatmulLayer>();
+          auto w2 = std::make_shared<op::ColomParallelMatmulLayer>(true);
+          //auto w2 = std::make_shared<op::MatmulLayer>();
           w2->set_weight(0, {dim, hidden_dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           w2->to_device(device_id_);
           llama_layers_->w2_layers_.push_back(w2);
