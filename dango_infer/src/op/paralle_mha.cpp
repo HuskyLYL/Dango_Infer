@@ -8,7 +8,7 @@ namespace op
     Paralle_MultiHeadAttenton::Paralle_MultiHeadAttenton(int32_t layer_index,
         int32_t kv_mul, int32_t kv_dim, int32_t seq_len,
         int32_t head_num, int32_t head_size)
-        : MultiHeadAttention(layer_index, kv_mul, kv_dim, seq_len,
+        : MultiHeadAttention(layer_index, kv_mul, kv_dim / nccl::G_MPI_SIZE, seq_len,
               head_num / nccl::G_MPI_SIZE, head_size),
           global_head_num_(head_num)
     {
@@ -74,6 +74,7 @@ namespace op
 
         this->set_input(0, local_query);
         this->set_input(1, local_score);
+        //key 和 value在外面就切分了
         this->set_input(2, input3);
         this->set_input(3, input4);
         this->set_output(0, local_output);
