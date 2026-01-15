@@ -30,7 +30,7 @@ cd build
 cmake ..
 make
 cd sampler/tp_parallel_simple_chat
-srun --ntasks=4 --ntasks-per-node=2 --gpus-per-task=1  -l bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L; exit 0'
+srun   -l bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L; exit 0'
 
 
 
