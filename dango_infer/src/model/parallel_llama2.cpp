@@ -47,9 +47,9 @@ namespace model
         CHECK(insert_buffer(ModelBufferType::kW3Output, w3_output));
 
         // kv cache
-        tensor::Tensor key_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, 0,data_type_);
+        tensor::Tensor key_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, device_id_,data_type_);
 
-        tensor::Tensor value_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, 0,data_type_);
+        tensor::Tensor value_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, device_id_,data_type_);
 
         CHECK(insert_buffer(ModelBufferType::kKeyCache, key_cache));
         CHECK(insert_buffer(ModelBufferType::kValueCache, value_cache));

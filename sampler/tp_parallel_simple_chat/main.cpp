@@ -106,6 +106,9 @@ int main(int argc, char* argv[])
 
     
     auto init_status = model.init(nccl::G_LOCAL_RANK);
+
+
+    
     
     if (!init_status) 
         LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
