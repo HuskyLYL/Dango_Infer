@@ -56,7 +56,7 @@ namespace op
             return status;
 
         if (has_all_gather&&output_offset)
-            nccl::TensorAllReduce(output1);
+            nccl::TensorAllGather(output1);
 
         return base::error::Success();
     }
