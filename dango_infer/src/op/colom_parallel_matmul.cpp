@@ -31,8 +31,24 @@ namespace op
                                 input1.data_type(),
                                 offset_ptr);
 
+        // Offset output per rank as well.
+        const size_t total_out_elems = output1.size();
+        CHECK_EQ(total_out_elems % static_cast<size_t>(nccl::G_MPI_SIZE), 0u)
+            << "ColomParallelMatmul output size must be divisible by world size";
+
+        const size_t out_per_rank = total_out_elems / static_cast<size_t>(nccl::G_MPI_SIZE);
+        const size_t out_elem_bytes = base::DataTypeSize(output1.data_type());
+        const size_t out_offset_bytes =
+            out_per_rank * out_elem_bytes * static_cast<size_t>(nccl::G_MPI_RANK);
+        void* out_offset_ptr =
+            static_cast<char*>(const_cast<void*>(output1.get_buffer()->ptr())) + out_offset_bytes;
+        tensor::Tensor output_view(static_cast<int32_t>(out_per_rank),
+                                   output1.getDeviceId(),
+                                   output1.data_type(),
+                                   out_offset_ptr);
+
         this->set_input(0, input_view);
-        this->set_output(0, output1);
+        this->set_output(0, output_view);
 
         base::Status status = MatmulLayer::forward(stream);
         if (!status)
