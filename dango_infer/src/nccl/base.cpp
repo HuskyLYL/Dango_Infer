@@ -22,9 +22,9 @@ namespace nccl
             LOG(INFO) << "Starting NCCL communicator lifecycle example with "
                       << G_MPI_SIZE << " processes";
 
-        //G_LOCAL_RANK = GetLocalRank(MPI_COMM_WORLD);
+        G_LOCAL_RANK = GetLocalRank(MPI_COMM_WORLD);
         //这里使用srun 启动 每个节点固定分配一个GPU
-        G_LOCAL_RANK = 0;
+        //G_LOCAL_RANK = 0;
 
         LOG(INFO)<<"MPI initialized - Process"<<G_MPI_RANK<<"of "<<G_MPI_RANK<< "total processes\n";
 
