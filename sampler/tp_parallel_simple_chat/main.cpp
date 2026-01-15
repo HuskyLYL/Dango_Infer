@@ -27,17 +27,23 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
   {
 
     auto start = std::chrono::steady_clock::now();
+    
+    if(nccl::G_MPI_RANK==0)
+
+      base::g_enable_debug_log = true;
+
+
 
     pos_tensor.index<int32_t>(0) = pos;
     if (pos < prompt_len - 1) 
     {
-      base::g_enable_debug_log = false;
+      
       tensor::Tensor input = model.fill_input(pos_tensor, prompt_embedding, is_prompt);
       model.predict(input, pos_tensor, is_prompt, next);
     } 
     else 
     {
-        base::g_enable_debug_log = false;
+
         is_prompt = false;
         tokens = std::vector<int32_t>{next};
         const auto& token_embedding = model.embedding(tokens);
@@ -62,7 +68,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
 
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
-    LOG(INFO)<<"pos:"<<pos<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
+    //LOG(INFO)<<"pos:"<<pos<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
 
     pos += 1;
   }
@@ -108,7 +114,7 @@ int main(int argc, char* argv[])
     auto init_status = model.init(nccl::G_LOCAL_RANK);
 
 
-    
+
     
     if (!init_status) 
         LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
@@ -120,9 +126,10 @@ int main(int argc, char* argv[])
     const std::string& sentence = "why the sky is blue? Can you tell me?";
 
     auto start = std::chrono::steady_clock::now();
-    printf("Generating...\n");
+    
+    printf("RANK[%d]Generating...\n",nccl::G_MPI_RANK);
     fflush(stdout);
-    int steps = generate(model, sentence, 100, true);
+    int steps = generate(model, sentence, 1, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
