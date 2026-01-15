@@ -7,8 +7,8 @@
 namespace op
 {
 
-    RowMatmulLayer::RowMatmulLayer(bool has_all_gather_flag, bool has_bias)
-        : MatmulLayer(has_bias), has_all_gather(has_all_gather_flag){}
+    RowMatmulLayer::RowMatmulLayer(bool has_all_gather_flag,bool output_offset bool has_bias)
+        : MatmulLayer(has_bias),output_offset(output_offset) ,has_all_gather(has_all_gather_flag){}
 
 
 
@@ -19,35 +19,48 @@ namespace op
         //RowMatmulLayer input输入直接不需要进行切分
         this->set_input(0, input1);
 
-        // Create a view for this rank's output slice.
-        const size_t total_out_elems = output1.size();
-        CHECK_EQ(total_out_elems % static_cast<size_t>(nccl::G_MPI_SIZE), 0u)
-            << "RowMatmul output size must be divisible by world size";
-        
-        const size_t out_per_rank = total_out_elems / static_cast<size_t>(nccl::G_MPI_SIZE);
-        const size_t out_elem_bytes = base::DataTypeSize(output1.data_type());
 
-        const size_t out_offset_bytes =
-            out_per_rank * out_elem_bytes * static_cast<size_t>(nccl::G_MPI_RANK);
-        void* out_offset_ptr =
-            static_cast<char*>(const_cast<void*>(output1.get_buffer()->ptr())) + out_offset_bytes;
-        tensor::Tensor output_view(static_cast<int32_t>(out_per_rank),
+
+        if(output_offset)
+        {
+
+            // Create a view for this rank's output slice.
+            const size_t total_out_elems = output1.size();
+            CHECK_EQ(total_out_elems % static_cast<size_t>(nccl::G_MPI_SIZE), 0u)
+                << "RowMatmul output size must be divisible by world size";
+        
+            const size_t out_per_rank = total_out_elems / static_cast<size_t>(nccl::G_MPI_SIZE);
+            const size_t out_elem_bytes = base::DataTypeSize(output1.data_type());
+            const size_t out_offset_bytes =
+                out_per_rank * out_elem_bytes * static_cast<size_t>(nccl::G_MPI_RANK);
+            void* out_offset_ptr =
+                static_cast<char*>(const_cast<void*>(output1.get_buffer()->ptr())) + out_offset_bytes;
+            tensor::Tensor output_view(static_cast<int32_t>(out_per_rank),
                                    output1.getDeviceId(),
                                    output1.data_type(),
                                    out_offset_ptr);
 
-        this->set_output(0, output_view);
+            this->set_output(0, output_view);
+        }
+        else
+        {
+            this->set_output(0, output1);
+        }
+        
+
+
 
         base::Status status = MatmulLayer::forward(stream);
 
         if (!status)
             return status;
 
-        if (has_all_gather)
+        if (has_all_gather&&output_offset)
             nccl::TensorAllReduce(output1);
 
         return base::error::Success();
     }
+
 
     base::Status RowMatmulLayer::set_bias(int32_t idx, int32_t& dims, const void* bias_ptr,
                                         base::deviceId device_id)

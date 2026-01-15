@@ -19,14 +19,11 @@ namespace model
         tensor::Tensor input_embeddings(1,config_->dim_,device_id_,data_type_);
 
         // Partition sin/cos cache along seq_len per rank.
-        CHECK_GT(nccl::G_MPI_SIZE, 0);
-        CHECK_EQ(config_->head_size_ % nccl::G_MPI_SIZE, 0)
-            << "head_size must be divisible by world size in ParallelLLama2Model.";
+     
 
-        const int32_t seq_per_rank = config_->seq_len_ / nccl::G_MPI_SIZE;
-        tensor::Tensor sin_cache(config_->head_size_ * seq_per_rank,device_id_,data_type_);
+        tensor::Tensor sin_cache(config_->head_size_ * config_->seq_len_,device_id_,data_type_);
 
-        tensor::Tensor cos_cache(config_->head_size_ * seq_per_rank,device_id_,data_type_);
+        tensor::Tensor cos_cache(config_->head_size_ * config_->seq_len_,device_id_,data_type_);
 
         CHECK(insert_buffer(ModelBufferType::kSinCache, sin_cache));
         CHECK(insert_buffer(ModelBufferType::kCosCache, cos_cache));
@@ -46,10 +43,15 @@ namespace model
         CHECK(insert_buffer(ModelBufferType::kW1Output, w1_output));
         CHECK(insert_buffer(ModelBufferType::kW3Output, w3_output));
 
-        // kv cache
-        tensor::Tensor key_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, device_id_,data_type_);
+        // kv cache (shard kv_dim across ranks)
+        CHECK_GT(nccl::G_MPI_SIZE, 0);
+        CHECK_EQ(config_->kv_dim_ % nccl::G_MPI_SIZE, 0)
+            << "kv_dim must be divisible by world size in ParallelLLama2Model.";
+        const int32_t per_rank_kv_dim = config_->kv_dim_ / nccl::G_MPI_SIZE;
 
-        tensor::Tensor value_cache(config_->layer_num_, config_->seq_len_,config_->kv_dim_, device_id_,data_type_);
+        tensor::Tensor key_cache(config_->layer_num_, config_->seq_len_, per_rank_kv_dim, device_id_, data_type_);
+
+        tensor::Tensor value_cache(config_->layer_num_, config_->seq_len_, per_rank_kv_dim, device_id_, data_type_);
 
         CHECK(insert_buffer(ModelBufferType::kKeyCache, key_cache));
         CHECK(insert_buffer(ModelBufferType::kValueCache, value_cache));
@@ -106,7 +108,7 @@ namespace model
       // create weight matrix for query
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          auto wq = std::make_shared<op::RowMatmulLayer>(false);
+          auto wq = std::make_shared<op::RowMatmulLayer>(false,true);
           wq->set_weight(0, {dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wq->to_device(device_id_);
           llama_layers_->wq_layers_.push_back(wq);
@@ -117,7 +119,7 @@ namespace model
       // create weight matrix for key
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          auto wk = std::make_shared<op::RowMatmulLayer>(false);
+          auto wk = std::make_shared<op::RowMatmulLayer>(false,false);
           wk->set_weight(0, {config_->kv_dim_, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wk->to_device(device_id_);
           llama_layers_->wk_layers_.push_back(wk);
@@ -127,7 +129,7 @@ namespace model
       // create weight matrix for value
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          auto wv = std::make_shared<op::RowMatmulLayer>(false);
+          auto wv = std::make_shared<op::RowMatmulLayer>(false,false);
           wv->set_weight(0, {config_->kv_dim_, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           wv->to_device(device_id_);
           llama_layers_->wv_layers_.push_back(wv);
@@ -152,7 +154,7 @@ namespace model
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
 
-          auto w1 = std::make_shared<op::RowMatmulLayer>(false);
+          auto w1 = std::make_shared<op::RowMatmulLayer>(false,true);
           w1->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos),base::CPUID,data_type_);
           w1->to_device(device_id_);
           llama_layers_->w1_layers_.push_back(w1);
@@ -172,7 +174,7 @@ namespace model
       // w3 layers
       for (int32_t i = 0; i < config_->layer_num_; ++i) 
       {
-          auto w3 = std::make_shared<op::RowMatmulLayer>(false);
+          auto w3 = std::make_shared<op::RowMatmulLayer>(false,true);
           w3->set_weight(0, {hidden_dim, dim}, this->raw_model_data_->weight(pos), base::CPUID,data_type_);
           w3->to_device(device_id_);
           llama_layers_->w3_layers_.push_back(w3);
@@ -184,7 +186,7 @@ namespace model
       // skip freqs_cos and freqs_sin weight
       pos += config_->seq_len_ * config_->head_size_;
 
-      llama_layers_->cls_layer_ =std::make_shared<op::RowMatmulLayer>(true);
+      llama_layers_->cls_layer_ =std::make_shared<op::RowMatmulLayer>(true,true);
   
       if (config_->is_shared_weight_) 
       // using token embedding weight
@@ -239,7 +241,7 @@ namespace model
     {
         CHECK(llama_layers_ != nullptr);
 
-        llama_layers_->rope_layer_ = std::make_shared<op::RoPELayer>(config_->dim_, config_->kv_dim_, config_->head_size_);
+        llama_layers_->rope_layer_ = std::make_shared<op::ParallelRoPELayer>(config_->dim_, config_->kv_dim_, config_->head_size_);
 
         //pos 是计算cacheo算到多少层    但是cache会预留一个大的空间,所以这里不需要担心
         llama_layers_->mha_layer_ = std::make_shared<op::Paralle_MultiHeadAttenton>(0, config_->kv_mul_, config_->kv_dim_, 
@@ -248,5 +250,74 @@ namespace model
         llama_layers_->add_layer_ = std::make_shared<op::VecAddLayer>();
 
         llama_layers_->swiglu_layer_ = std::make_shared<op::ParallelSwiGLULayer>();
+    }
+
+    void ParallelLLama2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor& pos_tensor) const
+    {
+        CHECK(llama_layers_ != nullptr);
+        // kv cache
+        tensor::Tensor query = this->get_buffer(ModelBufferType::kQuery);
+        int32_t pos = pos_tensor.index<int32_t>(0);
+        // wq wk wv @ input
+
+
+        const auto& [key, val] = slice_kv_cache(layer_idx, pos);
+        // query
+        const auto& query_layer = llama_layers_->wq_layers_.at(layer_idx);
+        CHECK_NE(query_layer, nullptr) << "The query layer in the attention block is null pointer.";
+
+        auto rmsnorm_output = get_buffer(ModelBufferType::kOutputRMSNorm);
+        STATUS_CHECK(query_layer->forward(rmsnorm_output, query));
+
+        // key
+        const auto& key_layer = llama_layers_->wk_layers_.at(layer_idx);
+        CHECK_NE(key_layer, nullptr) << "The key layer in the attention block is null pointer.";
+        STATUS_CHECK(key_layer->forward(rmsnorm_output, key));
+        // value
+        const auto& value_layer = llama_layers_->wv_layers_.at(layer_idx);
+        CHECK_NE(value_layer, nullptr) << "The value layer in the attention block is null pointer.";
+        STATUS_CHECK(value_layer->forward(rmsnorm_output, val));
+
+        // rope
+        CHECK_NE(llama_layers_->rope_layer_, nullptr)
+            << "The RoPE layer in the attention block is null pointer.";
+        STATUS_CHECK(llama_layers_->rope_layer_->forward(
+            query, key, pos_tensor, get_buffer(ModelBufferType::kSinCache),
+            get_buffer(ModelBufferType::kCosCache), tensor::Tensor{}));
+    }
+
+    std::pair<tensor::Tensor, tensor::Tensor> ParallelLLama2Model::slice_kv_cache(
+        int32_t layer_idx, int32_t token_pos) const
+    {
+      CHECK_GT(nccl::G_MPI_SIZE, 0);
+      CHECK_EQ(config_->kv_dim_ % nccl::G_MPI_SIZE, 0)
+          << "kv_dim must be divisible by world size for parallel KV slicing.";
+
+      const int32_t per_rank_kv_dim = config_->kv_dim_ / nccl::G_MPI_SIZE;
+      int32_t layer_offset = layer_idx * config_->seq_len_ * per_rank_kv_dim;
+      int32_t cache_offset = layer_offset + token_pos * per_rank_kv_dim;
+
+      if (data_type_ == base::DataType::kDataTypeBf16)
+      {
+        auto* key_cache_ptr =
+            const_cast<__nv_bfloat16*>(get_buffer(ModelBufferType::kKeyCache).ptr<__nv_bfloat16>(cache_offset));
+        auto* val_cache_ptr =
+            const_cast<__nv_bfloat16*>(get_buffer(ModelBufferType::kValueCache).ptr<__nv_bfloat16>(cache_offset));
+
+        tensor::Tensor key(per_rank_kv_dim, device_id_, data_type_, key_cache_ptr);
+        tensor::Tensor val(per_rank_kv_dim, device_id_, data_type_, val_cache_ptr);
+
+        return {key, val};
+      }
+      else
+      {
+        float* key_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kKeyCache).ptr<float>(cache_offset));
+        float* val_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kValueCache).ptr<float>(cache_offset));
+
+        tensor::Tensor key(per_rank_kv_dim, device_id_, data_type_, key_cache_ptr);
+        tensor::Tensor val(per_rank_kv_dim, device_id_, data_type_, val_cache_ptr);
+
+        return {key, val};
+      }
     }
 }  // namespace model

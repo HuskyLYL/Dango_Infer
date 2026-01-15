@@ -12,9 +12,11 @@ namespace op
     class RowMatmulLayer : public MatmulLayer
     {
     public:
-        explicit RowMatmulLayer(bool has_all_gather,bool has_bias = false);
+        explicit RowMatmulLayer(bool has_all_gather,bool output_offset,bool has_bias = false);
 
         base::Status forward(const tensor::Tensor& input1, const tensor::Tensor& output1,cudaStream_t stream=nullptr) override;
+        // Forward without creating an output offset view; assumes output1 is already per-rank sized.
+
 
         base::Status set_bias(int32_t idx, int32_t& dims, const void* bias_ptr,base::deviceId device_id);
 
@@ -27,6 +29,7 @@ namespace op
     private:
 
         bool has_all_gather = false;
+        bool output_offset = false;
     };
 }  // namespace op
 #endif  // DANGO_INCLUDE_OP_ROW_PARALLEL_MATMUL_H_

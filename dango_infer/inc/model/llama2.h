@@ -61,19 +61,14 @@ namespace model
 
         void create_nonparam_layers() override;
 
-        void attention_mha(int32_t layer_idx, const tensor::Tensor& pos_tensor) const;
-
-        void attention_rms(int32_t layer_idx, const tensor::Tensor& input) const;
-
-        void feed_forward(int32_t layer_idx, const tensor::Tensor& input) const;
-
-        void attention_qkv(int32_t layer_idx, const tensor::Tensor& pos_tensor) const;
-
-        void cls_logits(const tensor::Tensor& input) const;
-
         int32_t post_processing(const tensor::Tensor& pos, bool is_prompt,cudaStream_t stream = nullptr) const override;
 
     protected:
+        virtual void attention_qkv(int32_t layer_idx, const tensor::Tensor& pos_tensor) const;
+        virtual void attention_rms(int32_t layer_idx, const tensor::Tensor& input) const;
+        virtual void attention_mha(int32_t layer_idx, const tensor::Tensor& pos_tensor) const;
+        virtual void feed_forward(int32_t layer_idx, const tensor::Tensor& input) const;
+        virtual void cls_logits(const tensor::Tensor& input) const;
 
 
         std::unique_ptr<LLama2Layers> llama_layers_;
