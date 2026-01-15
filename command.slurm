@@ -17,7 +17,7 @@ spack load armadillo
 spack load nccl
 spack load openmpi
 #network env for nccl
-export NCCL_SOCKET_IFNAME=${NCCL_SOCKET_IFNAME:-eth0}
+
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
 export NCCL_IB_DISABLE=${NCCL_IB_DISABLE:-0}
 export NCCL_SOCKET_IFNAME=br0
@@ -30,7 +30,7 @@ cd build
 cmake ..
 make
 cd sampler/tp_parallel_simple_chat
-srun --mpi=pmi2 ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+srun --ntasks=4 --ntasks-per-node=2 --gpus-per-task=1  -l bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L; exit 0'
 
 
 
