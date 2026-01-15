@@ -29,7 +29,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     auto start = std::chrono::steady_clock::now();
 
     if(nccl::G_MPI_RANK==0)
-      base::g_enable_debug_log = false;
+      base::g_enable_debug_log = true;
 
 
     
