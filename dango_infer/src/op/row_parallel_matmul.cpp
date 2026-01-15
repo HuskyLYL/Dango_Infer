@@ -7,7 +7,7 @@
 namespace op
 {
 
-    RowMatmulLayer::RowMatmulLayer(bool has_all_gather_flag,bool output_offset bool has_bias)
+    RowMatmulLayer::RowMatmulLayer(bool has_all_gather_flag,bool output_offset ,bool has_bias)
         : MatmulLayer(has_bias),output_offset(output_offset) ,has_all_gather(has_all_gather_flag){}
 
 
