@@ -105,10 +105,6 @@ int main(int argc, char* argv[])
     LOG(INFO) << "Start initializing the model on Device:"<<nccl::G_LOCAL_RANK;
 
     
-
-    nccl::FinalizeNccl();
-    return 0;
-
     auto init_status = model.init(nccl::G_LOCAL_RANK);
     
     if (!init_status) 
