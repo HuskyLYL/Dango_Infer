@@ -24,8 +24,6 @@ export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
 
-srun   -l bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L; exit 0'
-exit 1
 rm -r build
 mkdir build
 cd build
@@ -33,7 +31,7 @@ cmake ..
 make
 cd sampler/tp_parallel_simple_chat
 
-
+srun ./simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
 
 
 #/home/lyl/local/NVIDIA-Nsight-Compute-2025.4/ncu --target-processes all \
