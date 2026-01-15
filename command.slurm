@@ -31,7 +31,7 @@ cmake ..
 make
 cd sampler/tp_parallel_simple_chat
 
-srun --mpi=pmix_v5 -n 4 ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+srun --mpi=pmix_v5  ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
 
 
 #/home/lyl/local/NVIDIA-Nsight-Compute-2025.4/ncu --target-processes all \
