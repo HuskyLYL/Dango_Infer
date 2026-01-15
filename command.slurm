@@ -17,20 +17,22 @@ spack load armadillo
 spack load nccl
 spack load openmpi
 #network env for nccl
-
+#export NCCL_SOCKET_IFNAME=${NCCL_SOCKET_IFNAME:-eth0}
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
 export NCCL_IB_DISABLE=${NCCL_IB_DISABLE:-0}
 export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
 
+srun   -l bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L; exit 0'
+exit 1
 rm -r build
 mkdir build
 cd build
 cmake ..
 make
 cd sampler/tp_parallel_simple_chat
-srun   -l bash -lc 'echo "HOST:$(hostname) NODEID:$SLURM_NODEID LOCALID:$SLURM_LOCALID PROCID:$SLURM_PROCID"; nvidia-smi -L; exit 0'
+
 
 
 
