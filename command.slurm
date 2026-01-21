@@ -34,12 +34,6 @@ CATKIN_WS_MODEL_BIN="$CATKIN_WS_MODEL_DIR/bf16/model.bin"
 CATKIN_WS_TOKENIZER="$CATKIN_WS_MODEL_DIR/llama-2-7b/tokenizer.model"
 
 
-echo $CATKIN_WS
-echo $CATKIN_WS_MODEL_BIN
-echo $CATKIN_WS_TOKENIZER
-
-exit 0
-
 
 rm -rf "$CATKIN_WS_BUILD"
 cmake -S "$CATKIN_WS" -B "$CATKIN_WS_BUILD"
