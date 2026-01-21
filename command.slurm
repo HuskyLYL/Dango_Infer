@@ -32,12 +32,12 @@ CATKIN_WS_MODEL_BIN="$CATKIN_WS_MODEL_DIR/bf16/model.bin"
 CATKIN_WS_TOKENIZER="$CATKIN_WS_MODEL_DIR/llama-2-7b/tokenizer.model"
 
 
-rm -rf "$BUILD"
-cmake -S "$ROOT" -B "$BUILD"
-cmake --build "$BUILD" -j
+rm -rf "$CATKIN_WS_BUILD"
+cmake -S "$CATKIN_WS" -B "$CATKIN_WS_BUILD"
+cmake --build "$CATKIN_WS_BUILD" -j
 
-srun --mpi=pmix_v5 "$BUILD/sampler/simple_chat/simple_chat" "$MODEL_BIN" "$TOKENIZER"
-srun --mpi=pmix_v5 "$BUILD/sampler/tp_parallel_simple_chat/tp_parallel_simple_chat" "$MODEL_BIN" "$TOKENIZER"
+srun --mpi=pmix_v5 "$CATKIN_WS_BUILD/sampler/simple_chat/simple_chat" "$CATKIN_WS_MODEL_BIN" "$CATKIN_WS_TOKENIZER"
+srun --mpi=pmix_v5 "$CATKIN_WS_BUILD/sampler/tp_parallel_simple_chat/tp_parallel_simple_chat" "$CATKIN_WS_MODEL_BIN" "$CATKIN_WS_TOKENIZER"
 
 
 
