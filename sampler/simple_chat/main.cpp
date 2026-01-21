@@ -61,7 +61,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     
-    LOG(INFO)<<"pos:"<<pos<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
+    //LOG(INFO)<<"pos:"<<pos<<"\nsteps/s:%lf\n"<<static_cast<double>(1) / duration;
 
     pos += 1;
   }
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
     printf("Generating...\n");
     fflush(stdout);
-    int steps = generate(model, sentence, 2048, true);
+    int steps = generate(model, sentence, 1000, true);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<double>(end - start).count();
     printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);
