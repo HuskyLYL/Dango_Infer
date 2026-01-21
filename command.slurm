@@ -35,6 +35,8 @@ CATKIN_WS_TOKENIZER="$CATKIN_WS_MODEL_DIR/llama-2-7b/tokenizer.model"
 
 
 echo $CATKIN_WS
+echo $CATKIN_WS_MODEL_BIN
+echo $CATKIN_WS_TOKENIZER
 
 exit 0
 
