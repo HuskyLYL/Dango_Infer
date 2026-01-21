@@ -23,13 +23,17 @@ export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
 
-rm -r build
-mkdir build
-cd build
-cmake ..
-make
-cd sampler/tp_parallel_simple_chat
+#rm -r build
+#mkdir build
+#cd build
+#cmake ..
+#make
 
+cd sampler/simple_chat
+srun --mpi=pmix_v5  ./simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+
+
+cd sampler/tp_parallel_simple_chat
 srun --mpi=pmix_v5  ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
 
 
