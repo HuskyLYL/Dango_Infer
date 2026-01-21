@@ -23,18 +23,26 @@ export NCCL_SOCKET_IFNAME=br0
 export NCCL_P2P_DISABLE=0
 
 
-#rm -r build
-#mkdir build
-#cd build
-#cmake ..
-#make
+set -e
+CATKIN_WS="$(pwd)"
+CATKIN_WS_BUILD="$CATKINWS/build"
 
-cd sampler/simple_chat
-srun --mpi=pmix_v5  ./simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+CATKIN_WS_MODEL_DIR="$CATKIN_WS/models"
+CATKIN_WS_MODEL_BIN="$CATKIN_WS_MODEL_DIR/bf16/model.bin"
+CATKIN_WS_TOKENIZER="$CATKIN_WS_MODEL_DIR/llama-2-7b/tokenizer.model"
 
 
-cd sampler/tp_parallel_simple_chat
-srun --mpi=pmix_v5  ./tp_parallel_simple_chat ../../../../../models/bf16/model.bin ../../../../../models/llama-2-7b/tokenizer.model
+rm -rf "$BUILD"
+cmake -S "$ROOT" -B "$BUILD"
+cmake --build "$BUILD" -j
+
+srun --mpi=pmix_v5 "$BUILD/sampler/simple_chat/simple_chat" "$MODEL_BIN" "$TOKENIZER"
+srun --mpi=pmix_v5 "$BUILD/sampler/tp_parallel_simple_chat/tp_parallel_simple_chat" "$MODEL_BIN" "$TOKENIZER"
+
+
+
+
+
 
 
 #/home/lyl/local/NVIDIA-Nsight-Compute-2025.4/ncu --target-processes all \
